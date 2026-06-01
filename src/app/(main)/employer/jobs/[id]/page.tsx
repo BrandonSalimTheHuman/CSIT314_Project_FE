@@ -2,27 +2,46 @@
 
 import { useMemo, useState } from "react";
 
-import Image from "next/image";
-
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import UnderlineExt from "@tiptap/extension-underline";
 import {
   ArrowLeft,
   ArrowRight,
+  Bold,
   BriefcaseBusiness,
   CalendarDays,
   Clock3,
   DollarSign,
   FileText,
   GraduationCap,
+  Italic,
   Link2,
+  List,
   Mail,
   MapPin,
+  Pencil,
   Phone,
+  Strikethrough,
+  Underline,
   Users,
+  X,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { type CandidateProfile, CandidateProfileModal } from "@/components/candidate-profile-modal";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 
 const jobDetails = {
   title: "Senior UX Designer",
@@ -48,10 +67,10 @@ const jobDetails = {
   expires: "14 July, 2021",
   expiryDate: "June 30, 2021",
   education: "Graduation",
-  salary: "$50k-80k/month",
+  salary: "$8000 - $10000",
   location: "New York, USA",
-  jobType: "Full Time",
-  experience: "10-15 Years",
+  jobType: "Full time",
+  experience: "10-15 years",
 };
 
 const sampleCandidates = [
@@ -807,22 +826,296 @@ function CandidateCard({ candidate, onViewProfile }: { candidate: SampleCandidat
   );
 }
 
+// ── shared option lists (match job/post/page.tsx exactly) ─────────────────────
+const EDUCATION_OPTIONS = ["All", "High School", "Intermediate", "Graduation", "Master Degree", "Bachelor Degree"];
+const EXPERIENCE_OPTIONS = ["All", "Freshers", "1-2 years", "2-4 years", "4-6 years", "6-8 years", "8-10 years", "10-15 years", "15+ years"];
+const JOB_LEVEL_OPTIONS = ["Entry Level", "Mid Level", "Expert Level"];
+const JOB_TYPE_OPTIONS = ["Full time", "Part time", "Internship", "Remote", "Temporary", "Contract based"];
+const SALARY_OPTIONS = ["$50 - $1000", "$1000 - $2500", "$2500 - $4000", "$4000 - $6000", "$6000 - $8000", "$8000 - $10000", "$10000 - $15000", "$15000+"];
+
+const EDITOR_MENU = [
+  { label: "Bold",          Icon: Bold,          command: (e: ReturnType<typeof useEditor>) => e?.chain().focus().toggleBold().run(),        active: (e: ReturnType<typeof useEditor>) => !!e?.isActive("bold") },
+  { label: "Italic",        Icon: Italic,        command: (e: ReturnType<typeof useEditor>) => e?.chain().focus().toggleItalic().run(),      active: (e: ReturnType<typeof useEditor>) => !!e?.isActive("italic") },
+  { label: "Underline",     Icon: Underline,     command: (e: ReturnType<typeof useEditor>) => e?.chain().focus().toggleUnderline().run(),   active: (e: ReturnType<typeof useEditor>) => !!e?.isActive("underline") },
+  { label: "Strikethrough", Icon: Strikethrough, command: (e: ReturnType<typeof useEditor>) => e?.chain().focus().toggleStrike().run(),      active: (e: ReturnType<typeof useEditor>) => !!e?.isActive("strike") },
+  { label: "Bullet list",   Icon: List,          command: (e: ReturnType<typeof useEditor>) => e?.chain().focus().toggleBulletList().run(),  active: (e: ReturnType<typeof useEditor>) => !!e?.isActive("bulletList") },
+];
+
+function RichEditor({ initialContent }: { initialContent: string }) {
+  const editor = useEditor({
+    extensions: [StarterKit, UnderlineExt],
+    content: initialContent || "<p></p>",
+    immediatelyRender: false,
+  });
+  const mounted = useMemo(() => Boolean(editor), [editor]);
+  return (
+    <div className="rounded-3xl border border-border bg-white shadow-sm">
+      <div className="flex flex-wrap gap-2 border-b border-border/70 bg-slate-100 p-3">
+        {EDITOR_MENU.map(({ label, Icon, command, active }) => (
+          <Button
+            key={label}
+            type="button"
+            variant={editor && active(editor) ? "secondary" : "outline"}
+            size="sm"
+            className="min-w-[3rem]"
+            onClick={() => editor && command(editor)}
+            disabled={!editor}
+          >
+            <Icon className="size-4" />
+          </Button>
+        ))}
+      </div>
+      <div className="min-h-[220px] rounded-b-3xl px-4 py-4">
+        {mounted ? (
+          <EditorContent
+            editor={editor}
+            className="min-h-[180px] focus:outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:list-item"
+          />
+        ) : (
+          <Textarea readOnly value="Loading editor..." className="min-h-[180px]" />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EditJobForm({
+  job,
+  onSave,
+  onCancel,
+}: {
+  job: typeof jobDetails;
+  onSave: (updated: typeof jobDetails) => void;
+  onCancel: () => void;
+}) {
+  const [jobTitle, setJobTitle] = useState(job.title);
+  const [jobLocation, setJobLocation] = useState(job.location);
+  const [education, setEducation] = useState(job.education);
+  const [experience, setExperience] = useState(job.experience);
+  const [jobType, setJobType] = useState(job.jobType);
+  const [expiryDate, setExpiryDate] = useState(job.expiryDate);
+  const [jobLevel, setJobLevel] = useState("Mid Level");
+  const [salary, setSalary] = useState(job.salary);
+  const [companyLink, setCompanyLink] = useState(job.companyLink);
+  const [phone, setPhone] = useState(job.phone);
+  const [email, setEmail] = useState(job.email);
+
+  const editor = useEditor({
+    extensions: [StarterKit, UnderlineExt],
+    content: job.description || "<p></p>",
+    immediatelyRender: false,
+  });
+
+  const editorIsMounted = useMemo(() => Boolean(editor), [editor]);
+
+  const handleSave = () => {
+    onSave({
+      ...job,
+      title: jobTitle,
+      location: jobLocation,
+      education,
+      experience,
+      jobType,
+      expiryDate,
+      expires: expiryDate,
+      salary,
+      companyLink,
+      phone,
+      email,
+      description: editor?.getText() ?? job.description,
+      responsibilities: job.responsibilities,
+    });
+  };
+
+  return (
+    <div className="space-y-0">
+      <div className="mb-8 flex items-center justify-between">
+        <div className="text-3xl font-semibold">Edit Job</div>
+        <Button variant="ghost" size="icon" onClick={onCancel}>
+          <X className="size-5" />
+        </Button>
+      </div>
+
+      {/* Basic info */}
+      <div className="grid gap-6">
+        <div className="grid gap-2">
+          <Label htmlFor="job-title">Job Title</Label>
+          <Input
+            id="job-title"
+            placeholder="Add job title, role, vacancies etc"
+            value={jobTitle}
+            onChange={(e) => setJobTitle(e.target.value)}
+            className="h-10"
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="job-location">Job Location</Label>
+          <Textarea
+            id="job-location"
+            placeholder="Add job location"
+            className="min-h-[80px]"
+            value={jobLocation}
+            onChange={(e) => setJobLocation(e.target.value)}
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-2">
+            <Label htmlFor="company-link">Company Website</Label>
+            <Input id="company-link" value={companyLink} onChange={(e) => setCompanyLink(e.target.value)} className="h-10" />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="edit-phone">Phone</Label>
+            <Input id="edit-phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="h-10" />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="edit-email">Email</Label>
+            <Input id="edit-email" value={email} onChange={(e) => setEmail(e.target.value)} className="h-10" />
+          </div>
+        </div>
+      </div>
+
+      {/* Advanced Information */}
+      <div className="mt-10 grid gap-2">
+        <div className="mb-4 text-lg font-semibold">Advanced Information</div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-2">
+            <Label>Education</Label>
+            <Select value={education} onValueChange={setEducation}>
+              <SelectTrigger className="w-full py-5"><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                {EDUCATION_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label>Year of Experience</Label>
+            <Select value={experience} onValueChange={setExperience}>
+              <SelectTrigger className="w-full py-5"><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                {EXPERIENCE_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label>Job Type</Label>
+            <Select value={jobType} onValueChange={setJobType}>
+              <SelectTrigger className="w-full py-5"><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                {JOB_TYPE_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-2">
+            <Label>Expiration Date</Label>
+            <Input
+              type="date"
+              value={expiryDate}
+              onChange={(e) => setExpiryDate(e.target.value)}
+              className="py-5"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label>Job Level</Label>
+            <Select value={jobLevel} onValueChange={setJobLevel}>
+              <SelectTrigger className="w-full py-5"><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                {JOB_LEVEL_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label>Salary</Label>
+            <Select value={salary} onValueChange={setSalary}>
+              <SelectTrigger className="w-full py-5"><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                {SALARY_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      {/* Description & Responsibility */}
+      <div className="mt-10">
+        <div className="mb-4 text-lg font-semibold">Description &amp; Responsibility</div>
+        <div className="grid gap-2">
+          <Label htmlFor="description">Description</Label>
+          <div className="rounded-3xl border border-border bg-white shadow-sm">
+            <div className="flex flex-wrap gap-2 border-b border-border/70 bg-slate-100 p-3">
+              {EDITOR_MENU.map(({ label, Icon, command, active }) => (
+                <Button
+                  key={label}
+                  type="button"
+                  variant={editor && active(editor) ? "secondary" : "outline"}
+                  size="sm"
+                  className="min-w-[3rem]"
+                  onClick={() => editor && command(editor)}
+                  disabled={!editor}
+                >
+                  <Icon className="size-4" />
+                </Button>
+              ))}
+            </div>
+            <div className="min-h-[220px] rounded-b-3xl px-4 py-4">
+              {editorIsMounted ? (
+                <EditorContent
+                  editor={editor}
+                  className="min-h-[180px] focus:outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:list-item"
+                />
+              ) : (
+                <Textarea readOnly value="Loading editor..." className="min-h-[180px]" />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Separator className="my-10" />
+
+      <div className="flex gap-3">
+        <Button variant="outline" className="flex-1 py-6 text-base" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button className="flex-1 bg-sky-700 py-6 text-base font-semibold hover:bg-sky-800" onClick={handleSave}>
+          Save Changes
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function EmployerJobDetailPage({ params: _params }: { params: { id: string } }) {
-  const [level, setLevel] = useState("Mid Level");
-  const [experience, setExperience] = useState("2-4 years");
+  const [isEditing, setIsEditing] = useState(false);
+  const [job, setJob] = useState(jobDetails);
+
+  const [filterLevel, setFilterLevel] = useState("Mid Level");
+  const [filterExperience, setFilterExperience] = useState("2-4 years");
   const [education, setEducation] = useState<string[]>(["Graduation"]);
   const [page, setPage] = useState(1);
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
 
+  const handleSave = (updated: typeof jobDetails) => {
+    setJob(updated);
+    setIsEditing(false);
+    toast.success("Job updated successfully.");
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+  };
+
   const filteredCandidates = useMemo(() => {
     return sampleCandidates.filter((candidate) => {
-      if (level && level !== "All" && candidate.level !== level) return false;
-      if (experience && experience !== "All" && !candidate.experienceRange.startsWith(experience.split(" ")[0]))
+      if (filterLevel && filterLevel !== "All" && candidate.level !== filterLevel) return false;
+      if (filterExperience && filterExperience !== "All" && !candidate.experienceRange.startsWith(filterExperience.split(" ")[0]))
         return false;
       if (education.length && !education.includes(candidate.education) && !education.includes("All")) return false;
       return true;
     });
-  }, [level, experience, education]);
+  }, [filterLevel, filterExperience, education]);
 
   const pageSize = 10;
   const pageCount = Math.max(1, Math.ceil(filteredCandidates.length / pageSize));
@@ -851,134 +1144,114 @@ export default function EmployerJobDetailPage({ params: _params }: { params: { i
       <main className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid gap-8">
           <section className="space-y-6 rounded-[2rem] border border-border bg-card p-6 shadow-sm lg:p-8">
-            <div className="flex flex-col gap-6 lg:flex-row lg:gap-6">
-              <div className="flex flex-1 flex-col gap-4">
-                <div className="flex gap-4">
-                  {/* Company Logo */}
-                  <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-muted">
-                    <Image fill src={jobDetails.companyLogoUrl} alt={jobDetails.company} className="object-cover" />
-                  </div>
-
-                  <div className="flex flex-1 flex-col justify-between">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <h1 className="font-semibold text-2xl">{jobDetails.title}</h1>
-                        <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 font-medium text-blue-700 text-sm">
-                          {jobDetails.jobType}
-                        </span>
+            {isEditing ? (
+              /* ── Edit mode ──────────────────────────────────────── */
+              <EditJobForm job={job} onSave={handleSave} onCancel={handleCancel} />
+            ) : (
+              /* ── View mode ──────────────────────────────────────── */
+              <>
+                <div className="flex flex-col gap-6 lg:flex-row lg:gap-6">
+                  <div className="flex flex-1 flex-col gap-4">
+                    <div className="flex gap-4">
+                      <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-muted">
+                        <img src={job.companyLogoUrl} alt={job.company} className="h-full w-full object-cover" />
                       </div>
-                      <div className="flex flex-wrap items-center gap-4 text-muted-foreground text-sm">
-                        <a
-                          href={jobDetails.companyLink}
-                          className="inline-flex items-center gap-1.5 text-primary hover:underline"
-                        >
-                          <Link2 className="size-4" />
-                          {jobDetails.companyLink}
-                        </a>
-                        <div className="inline-flex items-center gap-1.5">
-                          <Phone className="size-4" />
-                          {jobDetails.phone}
-                        </div>
-                        <div className="inline-flex items-center gap-1.5">
-                          <Mail className="size-4" />
-                          {jobDetails.email}
+                      <div className="flex flex-1 flex-col justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3">
+                            <h1 className="font-semibold text-2xl">{job.title}</h1>
+                            <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 font-medium text-blue-700 text-sm">
+                              {job.jobType}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-4 text-muted-foreground text-sm">
+                            <a href={job.companyLink} className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                              <Link2 className="size-4" />{job.companyLink}
+                            </a>
+                            <div className="inline-flex items-center gap-1.5"><Phone className="size-4" />{job.phone}</div>
+                            <div className="inline-flex items-center gap-1.5"><Mail className="size-4" />{job.email}</div>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="flex flex-col items-end gap-4 lg:justify-start">
-                <Button className="h-10 w-60 gap-2 bg-sky-700 px-6 py-3 text-base">
-                  Apply Now
-                  <ArrowRight className="size-4" />
-                </Button>
-                <div className="text-right">
-                  <div className="text-muted-foreground text-sm">
-                    Job expire in: <span className="font-semibold text-red-500">{jobDetails.expiryDate}</span>
+                  <div className="flex flex-col items-end gap-4 lg:justify-start">
+                    <Button onClick={() => setIsEditing(true)} className="h-10 w-60 gap-2 bg-sky-700 px-6 py-3 text-base">
+                      <Pencil className="size-4" />
+                      Edit Job
+                    </Button>
+                    <div className="text-right">
+                      <div className="text-muted-foreground text-sm">
+                        Job expire in: <span className="font-semibold text-red-500">{job.expiryDate}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-              {/* Left: Description */}
-              <div className="space-y-6">
-                <div>
-                  <h3 className="mb-3 font-semibold text-base">Job Description</h3>
-                  <p className="text-muted-foreground text-sm leading-7">{jobDetails.description}</p>
                 </div>
 
-                <div>
-                  <h3 className="mb-3 font-semibold text-base">Responsibilities</h3>
-                  <ul className="space-y-2">
-                    {jobDetails.responsibilities.map((responsibility) => (
-                      <li key={responsibility} className="flex gap-3 text-muted-foreground text-sm">
-                        <span className="mt-1.5 flex h-2 w-2 flex-shrink-0 rounded-full bg-muted-foreground" />
-                        {responsibility}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+                <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="mb-3 font-semibold text-base">Job Description</h3>
+                      <p className="text-muted-foreground text-sm leading-7">{job.description}</p>
+                    </div>
+                    <div>
+                      <h3 className="mb-3 font-semibold text-base">Responsibilities</h3>
+                      <ul className="space-y-2">
+                        {job.responsibilities.map((r) => (
+                          <li key={r} className="flex gap-3 text-muted-foreground text-sm">
+                            <span className="mt-1.5 flex h-2 w-2 flex-shrink-0 rounded-full bg-muted-foreground" />
+                            {r}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
 
-              <div className="rounded-3xl border border-border bg-background p-6">
-                <h3 className="mb-4 font-semibold text-base">Job Overview</h3>
-                <Separator className="mb-4" />
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="flex flex-col gap-1 py-4">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <CalendarDays color="#0A65CC" className="size-6" />
+                  <div className="rounded-3xl border border-border bg-background p-6">
+                    <h3 className="mb-4 font-semibold text-base">Job Overview</h3>
+                    <Separator className="mb-4" />
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="flex flex-col gap-1 py-4">
+                        <CalendarDays color="#0A65CC" className="size-6" />
+                        <div className="font-semibold text-muted-foreground text-xs uppercase">Job Posted:</div>
+                        <div className="font-medium text-sm">{job.posted}</div>
+                      </div>
+                      <div className="flex flex-col gap-1 py-4">
+                        <Clock3 color="#0A65CC" className="size-6" />
+                        <div className="font-semibold text-muted-foreground text-xs uppercase">Job Expires In:</div>
+                        <div className="font-medium text-sm">{job.expires}</div>
+                      </div>
+                      <div className="flex flex-col gap-1 py-4">
+                        <GraduationCap color="#0A65CC" className="size-6" />
+                        <div className="font-semibold text-muted-foreground text-xs uppercase">Education:</div>
+                        <div className="font-medium text-sm">{job.education}</div>
+                      </div>
+                      <div className="flex flex-col gap-1 py-4">
+                        <DollarSign color="#0A65CC" className="size-6" />
+                        <div className="font-semibold text-muted-foreground text-xs uppercase">Salary:</div>
+                        <div className="font-medium text-sm">{job.salary}</div>
+                      </div>
+                      <div className="flex flex-col gap-1 py-4">
+                        <MapPin color="#0A65CC" className="size-6" />
+                        <div className="font-semibold text-muted-foreground text-xs uppercase">Location:</div>
+                        <div className="font-medium text-sm">{job.location}</div>
+                      </div>
+                      <div className="flex flex-col gap-1 py-4">
+                        <FileText color="#0A65CC" className="size-6" />
+                        <div className="font-semibold text-muted-foreground text-xs uppercase">Job Type:</div>
+                        <div className="font-medium text-sm">{job.jobType}</div>
+                      </div>
                     </div>
-                    <div className="font-semibold text-muted-foreground text-xs uppercase">Job Posted:</div>
-                    <div className="font-medium text-sm">{jobDetails.posted}</div>
-                  </div>
-                  <div className="flex flex-col gap-1 py-4">
-                    <div className="flex items-center gap-2 font-semibold text-muted-foreground text-xs uppercase">
-                      <Clock3 color="#0A65CC" className="size-6" />
+                    <div className="mt-4 flex flex-col gap-1 py-4">
+                      <BriefcaseBusiness color="#0A65CC" className="size-6" />
+                      <div className="font-semibold text-muted-foreground text-xs uppercase">Experience:</div>
+                      <div className="font-medium text-sm">{job.experience}</div>
                     </div>
-                    <div className="font-semibold text-muted-foreground text-xs uppercase">Job Expires In:</div>
-                    <div className="font-medium text-sm">{jobDetails.expires}</div>
-                  </div>
-                  <div className="flex flex-col gap-1 py-4">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <GraduationCap color="#0A65CC" className="size-6" />
-                    </div>
-                    <div className="font-semibold text-muted-foreground text-xs uppercase">Education:</div>
-                    <div className="font-medium text-sm">{jobDetails.education}</div>
-                  </div>
-                  <div className="flex flex-col gap-1 py-4">
-                    <div className="flex items-center gap-2 font-semibold text-muted-foreground text-xs uppercase">
-                      <DollarSign color="#0A65CC" className="size-6" />
-                    </div>
-                    <div className="font-semibold text-muted-foreground text-xs uppercase">Salary:</div>
-                    <div className="font-medium text-sm">{jobDetails.salary}</div>
-                  </div>
-                  <div className="flex flex-col gap-1 py-4">
-                    <div className="flex items-center gap-2 font-semibold text-muted-foreground text-xs uppercase">
-                      <MapPin color="#0A65CC" className="size-6" />
-                    </div>
-                    <div className="font-semibold text-muted-foreground text-xs uppercase">Location:</div>
-                    <div className="font-medium text-sm">{jobDetails.location}</div>
-                  </div>
-                  <div className="flex flex-col gap-1 py-4">
-                    <div className="flex items-center gap-2 font-semibold text-muted-foreground text-xs uppercase">
-                      <FileText color="#0A65CC" className="size-6" />
-                    </div>
-                    <div className="font-semibold text-muted-foreground text-xs uppercase">Job Type:</div>
-                    <div className="font-medium text-sm">{jobDetails.jobType}</div>
                   </div>
                 </div>
-                <div className="mt-4 flex flex-col gap-1 py-4">
-                  <div className="flex items-center gap-2 font-semibold text-muted-foreground text-xs uppercase">
-                    <BriefcaseBusiness color="#0A65CC" className="size-6" />
-                  </div>
-                  <div className="font-semibold text-muted-foreground text-xs uppercase">Experience:</div>
-                  <div className="font-medium text-sm">{jobDetails.experience}</div>
-                </div>
-              </div>
-            </div>
+              </>
+            )}
           </section>
         </div>
 
@@ -1008,8 +1281,8 @@ export default function EmployerJobDetailPage({ params: _params }: { params: { i
                           type="radio"
                           name="candidate-level"
                           value={option.value}
-                          checked={level === option.value}
-                          onChange={() => setLevel(option.value)}
+                          checked={filterLevel === option.value}
+                          onChange={() => setFilterLevel(option.value)}
                           className="h-4 w-4 accent-primary"
                         />
                         <span>{option.label}</span>
@@ -1030,8 +1303,8 @@ export default function EmployerJobDetailPage({ params: _params }: { params: { i
                           type="radio"
                           name="candidate-experience"
                           value={option}
-                          checked={experience === option}
-                          onChange={() => setExperience(option)}
+                          checked={filterExperience === option}
+                          onChange={() => setFilterExperience(option)}
                           className="h-4 w-4 accent-primary"
                         />
                         <span>{option}</span>

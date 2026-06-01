@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 
-import Image from "next/image";
 import Link from "next/link";
 
 import { ArrowLeft, ArrowRight, Bookmark, BookmarkCheck, MapPin, Search } from "lucide-react";
@@ -258,8 +257,8 @@ const JobCard = ({
   <div className="rounded-2xl border border-border bg-white p-6 shadow-sm transition hover:border-sky-600 hover:shadow-md">
     <div className="flex items-start justify-between gap-2">
       <div className="flex items-center gap-4">
-        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
-          <Image fill src={job.logo} alt={job.company} className="object-cover" />
+        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
+          <img src={job.logo} alt={job.company} className="h-full w-full object-cover" />
         </div>
         <div className="flex flex-col gap-1">
           <div className="font-medium text-foreground text-lg">{job.company}</div>

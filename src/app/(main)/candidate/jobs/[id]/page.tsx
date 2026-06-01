@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-import Image from "next/image";
-
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import UnderlineExt from "@tiptap/extension-underline";
 import {
   ArrowRight,
+  Bold,
   Bookmark,
   BookmarkCheck,
   BriefcaseBusiness,
@@ -14,15 +16,28 @@ import {
   DollarSign,
   FileText,
   GraduationCap,
+  Italic,
   Link2,
+  List,
   Mail,
   MapPin,
   Phone,
+  Strikethrough,
+  Underline,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 
 const jobDetails = {
   title: "Senior UX Designer",
@@ -54,12 +69,82 @@ const jobDetails = {
   experience: "10-15 Years",
 };
 
+const EDITOR_MENU = [
+  { label: "Bold",          Icon: Bold,          command: (e: ReturnType<typeof useEditor>) => e?.chain().focus().toggleBold().run(),       active: (e: ReturnType<typeof useEditor>) => !!e?.isActive("bold") },
+  { label: "Italic",        Icon: Italic,        command: (e: ReturnType<typeof useEditor>) => e?.chain().focus().toggleItalic().run(),     active: (e: ReturnType<typeof useEditor>) => !!e?.isActive("italic") },
+  { label: "Underline",     Icon: Underline,     command: (e: ReturnType<typeof useEditor>) => e?.chain().focus().toggleUnderline().run(),  active: (e: ReturnType<typeof useEditor>) => !!e?.isActive("underline") },
+  { label: "Strikethrough", Icon: Strikethrough, command: (e: ReturnType<typeof useEditor>) => e?.chain().focus().toggleStrike().run(),     active: (e: ReturnType<typeof useEditor>) => !!e?.isActive("strike") },
+  { label: "Bullet list",   Icon: List,          command: (e: ReturnType<typeof useEditor>) => e?.chain().focus().toggleBulletList().run(), active: (e: ReturnType<typeof useEditor>) => !!e?.isActive("bulletList") },
+];
+
+function CoverLetterEditor({ onSubmit, onCancel }: { onSubmit: (text: string) => void; onCancel: () => void }) {
+  const editor = useEditor({
+    extensions: [StarterKit, UnderlineExt],
+    content: "<p></p>",
+    immediatelyRender: false,
+  });
+  const mounted = useMemo(() => Boolean(editor), [editor]);
+
+  const handleSubmit = () => {
+    const text = editor?.getText().trim() ?? "";
+    if (!text) {
+      toast.error("Please write a cover letter before submitting.");
+      return;
+    }
+    onSubmit(text);
+  };
+
+  return (
+    <>
+      <div className="rounded-2xl border border-border bg-white shadow-sm">
+        <div className="flex flex-wrap gap-2 rounded-t-2xl border-b border-border/70 bg-slate-100 p-3">
+          {EDITOR_MENU.map(({ label, Icon, command, active }) => (
+            <Button
+              key={label}
+              type="button"
+              variant={editor && active(editor) ? "secondary" : "outline"}
+              size="sm"
+              className="min-w-[3rem]"
+              onClick={() => editor && command(editor)}
+              disabled={!editor}
+            >
+              <Icon className="size-4" />
+            </Button>
+          ))}
+        </div>
+        <div className="min-h-[420px] rounded-b-2xl px-4 py-4">
+          {mounted ? (
+            <EditorContent
+              editor={editor}
+              className="min-h-[380px] focus:outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:list-item"
+            />
+          ) : (
+            <Textarea readOnly value="Loading editor..." className="min-h-[380px]" />
+          )}
+        </div>
+      </div>
+
+      <DialogFooter className="mt-4 gap-2 sm:gap-2">
+        <Button variant="outline" onClick={onCancel} className="flex-1">
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit} className="flex-1 bg-sky-700 font-semibold hover:bg-sky-800">
+          Submit Application
+          <ArrowRight className="ml-2 size-4" />
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
 export default function CandidateJobDetailPage({ params: _params }: { params: { id: string } }) {
   const [saved, setSaved] = useState(false);
   const [applied, setApplied] = useState(false);
+  const [applyOpen, setApplyOpen] = useState(false);
 
-  const handleApply = () => {
+  const handleApplySubmit = (_coverLetter: string) => {
     setApplied(true);
+    setApplyOpen(false);
     toast.success("Application submitted successfully!");
   };
 
@@ -80,8 +165,8 @@ export default function CandidateJobDetailPage({ params: _params }: { params: { 
             <div className="flex flex-1 flex-col gap-4">
               <div className="flex gap-4">
                 {/* Company Logo */}
-                <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-muted">
-                  <Image fill src={jobDetails.companyLogoUrl} alt={jobDetails.company} className="object-cover" />
+                <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-muted">
+                  <img src={jobDetails.companyLogoUrl} alt={jobDetails.company} className="h-full w-full object-cover" />
                 </div>
 
                 <div className="flex flex-1 flex-col justify-between">
@@ -125,7 +210,7 @@ export default function CandidateJobDetailPage({ params: _params }: { params: { 
                   {saved ? <BookmarkCheck className="size-5 text-sky-600" /> : <Bookmark className="size-5" />}
                 </button>
                 <Button
-                  onClick={handleApply}
+                  onClick={() => setApplyOpen(true)}
                   disabled={applied}
                   className="h-10 w-52 gap-2 bg-sky-700 px-6 py-3 text-base disabled:opacity-70"
                 >
@@ -135,7 +220,8 @@ export default function CandidateJobDetailPage({ params: _params }: { params: { 
               </div>
               <div className="text-right">
                 <div className="text-muted-foreground text-sm">
-                  Job expire in: <span className="font-semibold text-red-500">{jobDetails.expiryDate}</span>
+                  Job expire in:{" "}
+                  <span className="font-semibold text-red-500">{jobDetails.expiryDate}</span>
                 </div>
               </div>
             </div>
@@ -168,52 +254,38 @@ export default function CandidateJobDetailPage({ params: _params }: { params: { 
               <Separator className="mb-4" />
               <div className="grid grid-cols-3 gap-4">
                 <div className="flex flex-col gap-1 py-4">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <CalendarDays color="#0A65CC" className="size-6" />
-                  </div>
+                  <CalendarDays color="#0A65CC" className="size-6" />
                   <div className="font-semibold text-muted-foreground text-xs uppercase">Job Posted:</div>
                   <div className="font-medium text-sm">{jobDetails.posted}</div>
                 </div>
                 <div className="flex flex-col gap-1 py-4">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Clock3 color="#0A65CC" className="size-6" />
-                  </div>
+                  <Clock3 color="#0A65CC" className="size-6" />
                   <div className="font-semibold text-muted-foreground text-xs uppercase">Job Expires In:</div>
                   <div className="font-medium text-sm">{jobDetails.expires}</div>
                 </div>
                 <div className="flex flex-col gap-1 py-4">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <GraduationCap color="#0A65CC" className="size-6" />
-                  </div>
+                  <GraduationCap color="#0A65CC" className="size-6" />
                   <div className="font-semibold text-muted-foreground text-xs uppercase">Education:</div>
                   <div className="font-medium text-sm">{jobDetails.education}</div>
                 </div>
                 <div className="flex flex-col gap-1 py-4">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <DollarSign color="#0A65CC" className="size-6" />
-                  </div>
+                  <DollarSign color="#0A65CC" className="size-6" />
                   <div className="font-semibold text-muted-foreground text-xs uppercase">Salary:</div>
                   <div className="font-medium text-sm">{jobDetails.salary}</div>
                 </div>
                 <div className="flex flex-col gap-1 py-4">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <MapPin color="#0A65CC" className="size-6" />
-                  </div>
+                  <MapPin color="#0A65CC" className="size-6" />
                   <div className="font-semibold text-muted-foreground text-xs uppercase">Location:</div>
                   <div className="font-medium text-sm">{jobDetails.location}</div>
                 </div>
                 <div className="flex flex-col gap-1 py-4">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <FileText color="#0A65CC" className="size-6" />
-                  </div>
+                  <FileText color="#0A65CC" className="size-6" />
                   <div className="font-semibold text-muted-foreground text-xs uppercase">Job Type:</div>
                   <div className="font-medium text-sm">{jobDetails.jobType}</div>
                 </div>
               </div>
               <div className="mt-4 flex flex-col gap-1 py-4">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <BriefcaseBusiness color="#0A65CC" className="size-6" />
-                </div>
+                <BriefcaseBusiness color="#0A65CC" className="size-6" />
                 <div className="font-semibold text-muted-foreground text-xs uppercase">Experience:</div>
                 <div className="font-medium text-sm">{jobDetails.experience}</div>
               </div>
@@ -221,6 +293,23 @@ export default function CandidateJobDetailPage({ params: _params }: { params: { 
           </div>
         </section>
       </main>
+
+      {/* Apply Now dialog */}
+      <Dialog open={applyOpen} onOpenChange={setApplyOpen}>
+        <DialogContent className="flex max-h-[90vh] max-w-3xl flex-col overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Apply for {jobDetails.title}</DialogTitle>
+            <DialogDescription>
+              Write a cover letter to introduce yourself to <strong>{jobDetails.company}</strong>. Explain why you are a great fit for this role.
+            </DialogDescription>
+          </DialogHeader>
+
+          <CoverLetterEditor
+            onSubmit={handleApplySubmit}
+            onCancel={() => setApplyOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

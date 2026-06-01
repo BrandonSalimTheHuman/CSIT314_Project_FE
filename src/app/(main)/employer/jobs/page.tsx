@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 
-import Image from "next/image";
 import Link from "next/link";
 
 import { ArrowLeft, ArrowRight, MapPin, Search } from "lucide-react";
@@ -326,8 +325,8 @@ const JobCard = ({ job, index }: { job: (typeof jobPostings)[number]; index: num
     className="block rounded-2xl border border-border bg-white p-6 shadow-sm transition hover:border-sky-600 hover:shadow-md"
   >
     <div className="flex items-center gap-4">
-      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
-        <Image fill src={job.logo} alt={job.company} className="object-cover" />
+      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
+        <img src={job.logo} alt={job.company} className="h-full w-full object-cover" />
       </div>
       <div className="flex flex-col gap-1">
         <div className="font-medium text-foreground text-lg">{job.company}</div>
@@ -411,7 +410,7 @@ export default function EmployerJobPostManagementPage() {
       </div>
       <main className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <Link href="/employer/job/post">
+          <Link href="/employer/jobs/post">
             <Button className="bg-[#0066cc] px-8 py-6 font-medium text-base hover:bg-[#0052a3]">Post A Job</Button>
           </Link>
 
