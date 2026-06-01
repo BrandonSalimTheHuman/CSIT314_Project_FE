@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { EmployerTopNav } from '@/components/employer-top-nav';
+import { TopNav } from '@/components/top-nav';
 import { EmployerBottomNav } from '@/components/employer-bottom-nav';
 
 export default function Layout({
@@ -8,7 +8,7 @@ export default function Layout({
 }: Readonly<{ children: ReactNode }>) {
   return (
     <main>
-      <EmployerTopNav />
+      <TopNav role="employer" />
       {children}
       <EmployerBottomNav />
     </main>

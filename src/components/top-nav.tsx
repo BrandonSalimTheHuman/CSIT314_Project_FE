@@ -14,11 +14,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 
-export function CandidateTopNav() {
+interface TopNavProps {
+  role: "employer" | "candidate";
+}
+
+export function TopNav({ role }: TopNavProps) {
+  const homePath = `/${role}/jobs`;
+  const settingsPath = `/${role}/settings`;
+
   return (
     <div className="top-0 z-20 border-border border-b bg-background/95 px-2 backdrop-blur-sm">
       <div className="mx-auto flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <Link href="/candidate/jobs" className="flex items-center gap-1">
+        <Link href={homePath} className="flex items-center gap-1">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl text-primary">
             <Briefcase color="#0A65CC" className="size-6" />
           </div>
@@ -27,7 +34,12 @@ export function CandidateTopNav() {
 
         <div className="relative flex w-full max-w-3xl items-center sm:w-[600px]">
           <Search className="pointer-events-none absolute left-3 size-4 text-muted-foreground" />
-          <Input className="pl-10" type="search" placeholder="Job title, keyword, company" aria-label="Search jobs" />
+          <Input
+            className="pl-10"
+            type="search"
+            placeholder="Job title, keyword, company"
+            aria-label="Search jobs"
+          />
         </div>
 
         <div className="flex items-center gap-3">
@@ -45,14 +57,17 @@ export function CandidateTopNav() {
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/candidate/settings" className="flex items-center">
+                <Link href={settingsPath} className="flex items-center">
                   <Settings className="mr-2 size-4" />
                   Settings
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/auth/login" className="flex items-center text-destructive focus:text-destructive">
+                <Link
+                  href="/auth/login"
+                  className="flex items-center text-destructive focus:text-destructive"
+                >
                   <LogOut className="mr-2 size-4" />
                   Log Out
                 </Link>

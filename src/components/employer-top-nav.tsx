@@ -18,12 +18,12 @@ export function EmployerTopNav() {
   return (
     <div className="top-0 z-20 border-border border-b bg-background/95 px-2 backdrop-blur-sm">
       <div className="mx-auto flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="flex items-center gap-1">
+        <Link href="/employer/jobs" className="flex items-center gap-1">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl text-primary">
             <Briefcase color="#0A65CC" className="size-6" />
           </div>
           <div className="font-semibold text-lg">MyJob</div>
-        </div>
+        </Link>
 
         <div className="relative flex w-full max-w-3xl items-center sm:w-[600px]">
           <Search className="pointer-events-none absolute left-3 size-4 text-muted-foreground" />
