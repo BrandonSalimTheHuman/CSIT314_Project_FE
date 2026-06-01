@@ -36,7 +36,7 @@ export default function Layout({
             </div>
           </div>
         </div>
-        <div className='relative order-1 flex h-full'>{children}</div>
+        <div className='relative order-1 flex h-full overflow-y-auto'>{children}</div>
       </div>
     </main>
   );

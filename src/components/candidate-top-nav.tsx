@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 
-export function EmployerTopNav() {
+export function CandidateTopNav() {
   return (
     <div className="top-0 z-20 border-border border-b bg-background/95 px-2 backdrop-blur-sm">
       <div className="mx-auto flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
@@ -45,7 +45,7 @@ export function EmployerTopNav() {
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/employer/settings" className="flex items-center">
+                <Link href="/candidate/settings" className="flex items-center">
                   <Settings className="mr-2 size-4" />
                   Settings
                 </Link>
