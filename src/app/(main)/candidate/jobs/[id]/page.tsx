@@ -8,8 +8,6 @@ import UnderlineExt from "@tiptap/extension-underline";
 import {
   ArrowRight,
   Bold,
-  Bookmark,
-  BookmarkCheck,
   BriefcaseBusiness,
   CalendarDays,
   Clock3,
@@ -138,7 +136,6 @@ function CoverLetterEditor({ onSubmit, onCancel }: { onSubmit: (text: string) =>
 }
 
 export default function CandidateJobDetailPage({ params: _params }: { params: { id: string } }) {
-  const [saved, setSaved] = useState(false);
   const [applied, setApplied] = useState(false);
   const [applyOpen, setApplyOpen] = useState(false);
 
@@ -146,11 +143,6 @@ export default function CandidateJobDetailPage({ params: _params }: { params: { 
     setApplied(true);
     setApplyOpen(false);
     toast.success("Application submitted successfully!");
-  };
-
-  const handleSave = () => {
-    setSaved((prev) => !prev);
-    toast.success(saved ? "Job removed from saved." : "Job saved!");
   };
 
   return (
@@ -201,14 +193,6 @@ export default function CandidateJobDetailPage({ params: _params }: { params: { 
 
             <div className="flex flex-col items-end gap-3 lg:justify-start">
               <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background text-slate-500 transition hover:border-sky-500 hover:text-sky-600"
-                  aria-label={saved ? "Unsave job" : "Save job"}
-                >
-                  {saved ? <BookmarkCheck className="size-5 text-sky-600" /> : <Bookmark className="size-5" />}
-                </button>
                 <Button
                   onClick={() => setApplyOpen(true)}
                   disabled={applied}

@@ -3,15 +3,26 @@
 import { useMemo, useState } from "react";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-import { ArrowLeft, ArrowRight, Bookmark, BookmarkCheck, MapPin, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Crown, MapPin, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+const FREE_LIMIT = 10;
+
 const sortOptions = ["Latest", "Oldest"];
-const perPageOptions = ["6 per page", "12 per page", "24 per page"];
+const perPageOptions = ["10 per page", "12 per page", "24 per page"];
 
 const jobPostings = [
   {
@@ -245,37 +256,22 @@ const getVisiblePages = (page: number, pageCount: number) => {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 };
 
-const JobCard = ({
-  job,
-  saved,
-  onToggleSave,
-}: {
-  job: (typeof jobPostings)[number];
-  saved: boolean;
-  onToggleSave: () => void;
-}) => (
-  <div className="rounded-2xl border border-border bg-white p-6 shadow-sm transition hover:border-sky-600 hover:shadow-md">
-    <div className="flex items-start justify-between gap-2">
-      <div className="flex items-center gap-4">
-        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
-          <img src={job.logo} alt={job.company} className="h-full w-full object-cover" />
-        </div>
-        <div className="flex flex-col gap-1">
-          <div className="font-medium text-foreground text-lg">{job.company}</div>
-          <div className="flex items-center gap-1.5 text-slate-500 text-sm">
-            <MapPin className="size-4" />
-            {job.location}
-          </div>
+const JobCard = ({ job }: { job: (typeof jobPostings)[number] }) => (
+  <Link
+    href={`/candidate/jobs/${job.id}`}
+    className="block rounded-2xl border border-border bg-white p-6 shadow-sm transition hover:border-sky-600 hover:shadow-md"
+  >
+    <div className="flex items-center gap-4">
+      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
+        <img src={job.logo} alt={job.company} className="h-full w-full object-cover" />
+      </div>
+      <div className="flex flex-col gap-1">
+        <div className="font-medium text-foreground text-lg">{job.company}</div>
+        <div className="flex items-center gap-1.5 text-slate-500 text-sm">
+          <MapPin className="size-4" />
+          {job.location}
         </div>
       </div>
-      <button
-        type="button"
-        onClick={onToggleSave}
-        className="mt-1 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-sky-600"
-        aria-label={saved ? "Unsave job" : "Save job"}
-      >
-        {saved ? <BookmarkCheck className="size-5 text-sky-600" /> : <Bookmark className="size-5" />}
-      </button>
     </div>
 
     <div className="mt-6">
@@ -286,35 +282,37 @@ const JobCard = ({
         <span>{job.salary}</span>
       </div>
     </div>
-
-    <div className="mt-5">
-      <Link href={`/candidate/jobs/${job.id}`}>
-        <Button className="w-full bg-[#0066cc] hover:bg-[#0052a3]">
-          View Details
-          <ArrowRight className="ml-2 size-4" />
-        </Button>
-      </Link>
-    </div>
-  </div>
+  </Link>
 );
 
 export default function CandidateJobsPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("Latest");
-  const [perPage, setPerPage] = useState("12 per page");
+  const [perPage, setPerPage] = useState("10 per page");
   const [page, setPage] = useState(1);
-  const [savedJobs, setSavedJobs] = useState<Set<number>>(new Set());
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
-  const toggleSave = (id: number) => {
-    setSavedJobs((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+  const requiresMembership = (nextPage: number, nextPerPage: string) => {
+    const size = Number(nextPerPage.split(" ")[0]);
+    return nextPage > 1 || size > FREE_LIMIT;
+  };
+
+  const handlePageChange = (nextPage: number) => {
+    if (requiresMembership(nextPage, perPage)) {
+      setPaywallOpen(true);
+      return;
+    }
+    setPage(nextPage);
+  };
+
+  const handlePerPageChange = (nextPerPage: string) => {
+    if (requiresMembership(1, nextPerPage)) {
+      setPaywallOpen(true);
+      return;
+    }
+    setPerPage(nextPerPage);
+    setPage(1);
   };
 
   const filteredJobs = useMemo(() => {
@@ -372,12 +370,6 @@ export default function CandidateJobsPage() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-muted-foreground text-sm">
             {filteredJobs.length} jobs found
-            {savedJobs.size > 0 && (
-              <span className="ml-3 inline-flex items-center gap-1 rounded-full bg-sky-50 px-3 py-1 text-sky-600">
-                <BookmarkCheck className="size-3.5" />
-                {savedJobs.size} saved
-              </span>
-            )}
           </div>
 
           <div className="grid grid-cols-2 items-center gap-3">
@@ -393,7 +385,7 @@ export default function CandidateJobsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={perPage} onValueChange={setPerPage}>
+            <Select value={perPage} onValueChange={handlePerPageChange}>
               <SelectTrigger className="h-12 w-[180px] border-slate-200 bg-white py-5 text-slate-600">
                 <SelectValue placeholder="12 per page" />
               </SelectTrigger>
@@ -410,7 +402,7 @@ export default function CandidateJobsPage() {
 
         <div className="grid gap-6 lg:grid-cols-3">
           {currentJobs.map((job) => (
-            <JobCard key={job.id} job={job} saved={savedJobs.has(job.id)} onToggleSave={() => toggleSave(job.id)} />
+            <JobCard key={job.id} job={job} />
           ))}
         </div>
 
@@ -419,7 +411,7 @@ export default function CandidateJobsPage() {
             variant="ghost"
             className="size-10 rounded-full text-blue-400 hover:bg-blue-50 hover:text-blue-600"
             disabled={page <= 1}
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            onClick={() => handlePageChange(Math.max(1, page - 1))}
           >
             <ArrowLeft className="size-6" />
           </Button>
@@ -431,7 +423,7 @@ export default function CandidateJobsPage() {
                 <button
                   key={pageNum}
                   type="button"
-                  onClick={() => setPage(pageNum)}
+                  onClick={() => handlePageChange(pageNum)}
                   className={`flex size-10 items-center justify-center rounded-full font-medium text-sm transition-colors ${
                     isCurrent ? "bg-[#0061C2] text-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
                   }`}
@@ -446,7 +438,7 @@ export default function CandidateJobsPage() {
             variant="ghost"
             className="size-10 rounded-full text-blue-400 hover:bg-blue-50 hover:text-blue-600"
             disabled={page >= pageCount}
-            onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
+            onClick={() => handlePageChange(Math.min(pageCount, page + 1))}
           >
             <ArrowRight className="size-6" />
           </Button>
@@ -455,6 +447,38 @@ export default function CandidateJobsPage() {
           Page {page} of {pageCount}
         </div>
       </main>
+
+      {/* Membership paywall dialog */}
+      <Dialog open={paywallOpen} onOpenChange={setPaywallOpen}>
+        <DialogContent className="max-w-sm rounded-[2rem] text-center">
+          <DialogHeader className="items-center">
+            <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50">
+              <Crown className="size-7 text-[#0A65CC]" />
+            </div>
+            <DialogTitle className="text-xl text-slate-950">Membership Required</DialogTitle>
+            <DialogDescription asChild>
+              <div className="mt-2 rounded-3xl bg-blue-50 p-4 text-sm leading-6 text-slate-700">
+                Free accounts are limited to the first{" "}
+                <span className="font-semibold text-[#0A65CC]">10 job listings</span>.
+                Upgrade to unlock unlimited job browsing, advanced filters, and priority discovery.
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="mt-2 flex-col gap-2 sm:flex-col">
+            <Button
+              className="w-full rounded-full bg-[#0A65CC] font-semibold text-white hover:bg-[#0855b0]"
+              onClick={() => { setPaywallOpen(false); router.push("/membership"); }}
+            >
+              <Crown className="mr-2 size-4" />
+              Choose Membership
+            </Button>
+            <Button variant="ghost" className="w-full rounded-full text-slate-600 hover:text-slate-900" onClick={() => setPaywallOpen(false)}>
+              Maybe Later
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

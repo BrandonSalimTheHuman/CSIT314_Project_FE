@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const _jobTypeOptions = ["Full time", "Part time", "Internship", "Remote", "Temporary", "Contract based"];
 
 const sortOptions = ["Latest", "Oldest"];
-const perPageOptions = ["6 per page", "12 per page", "24 per page"];
+const perPageOptions = ["10 per page", "12 per page", "24 per page"];
 
 const jobPostings = [
   {
@@ -351,7 +351,7 @@ const JobCard = ({ job, index }: { job: (typeof jobPostings)[number]; index: num
 export default function EmployerJobPostManagementPage() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("Latest");
-  const [perPage, setPerPage] = useState("12 per page");
+  const [perPage, setPerPage] = useState("10 per page");
   const [page, setPage] = useState(1);
 
   const filteredJobs = useMemo(() => {

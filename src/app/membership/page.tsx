@@ -21,6 +21,7 @@ export default function MembershipPage() {
         </div>
 
         <div className='flex flex-col md:flex-row items-center md:items-start w-full justify-center gap-6 md:gap-0 p-8'>
+          {/* Free plan */}
           <section className='relative z-0 w-full max-w-sm rounded-[2rem] border border-border bg-white p-8 shadow-sm'>
             <div className='space-y-4'>
               <div>
@@ -37,9 +38,7 @@ export default function MembershipPage() {
                 <p className='text-5xl font-semibold tracking-tight text-slate-950'>
                   $0
                 </p>
-                <span className='pb-1 text-sm text-muted-foreground'>
-                  /month
-                </span>
+                <span className='pb-1 text-sm text-muted-foreground'>/month</span>
               </div>
 
               <div className='rounded-3xl bg-slate-50 p-4 text-sm text-slate-700'>
@@ -56,8 +55,7 @@ export default function MembershipPage() {
                 <div className='flex items-start gap-3'>
                   <Check className='mt-1.5 h-4 w-4 shrink-0 text-slate-950' />
                   <p className='text-left'>
-                    Up to 10 recommended search results for jobs or candidate
-                    matches
+                    Up to 10 recommended search results for jobs or candidate matches
                   </p>
                 </div>
                 <div className='flex items-start gap-3'>
@@ -70,13 +68,14 @@ export default function MembershipPage() {
             </div>
           </section>
 
-          <section className='relative z-10 w-full max-w-sm rounded-[2rem] border border-border bg-white p-8 shadow-xl md:-ml-5 md:-mt-4 transition-transform hover:scale-[1.01]'>
+          {/* Membership plan — blue */}
+          <section className='relative z-10 w-full max-w-sm rounded-[2rem] bg-[#0A65CC] p-8 shadow-xl md:-ml-5 md:-mt-4 transition-transform hover:scale-[1.01]'>
             <div className='space-y-4'>
               <div>
-                <p className='text-sm font-semibold uppercase tracking-[0.24em] text-muted-foreground'>
+                <p className='text-sm font-semibold uppercase tracking-[0.24em] text-blue-200'>
                   Membership
                 </p>
-                <p className='mt-4 text-base text-slate-700'>
+                <p className='mt-4 text-base text-blue-100'>
                   Best for job seekers and employers who want unlimited
                   recommended results and priority discovery for jobs and
                   candidate matches.
@@ -84,37 +83,33 @@ export default function MembershipPage() {
               </div>
 
               <div className='flex items-end gap-2'>
-                <p className='text-5xl font-semibold tracking-tight text-slate-950'>
+                <p className='text-5xl font-semibold tracking-tight text-white'>
                   $9
                 </p>
-                <span className='pb-1 text-sm text-muted-foreground'>
-                  /month
-                </span>
+                <span className='pb-1 text-sm text-blue-200'>/month</span>
               </div>
 
-              <div className='rounded-3xl bg-slate-50 p-4 text-sm text-slate-700'>
+              <div className='rounded-3xl bg-white/10 p-4 text-sm text-blue-100'>
                 Recommended searches are{' '}
-                <span className='font-semibold text-slate-900'>unlimited</span>{' '}
+                <span className='font-semibold text-white'>unlimited</span>{' '}
                 with membership.
               </div>
 
-              <Button className='w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90'>
+              <Button className='w-full rounded-full bg-white font-semibold text-[#0A65CC] hover:bg-blue-50'>
                 Choose membership
               </Button>
 
-              <div className='space-y-3 pt-6 text-sm text-slate-700'>
+              <div className='space-y-3 pt-6 text-sm text-blue-100'>
                 <div className='flex items-start gap-3'>
-                  <Check className='mt-1.5 h-4 w-4 shrink-0 text-primary' />
+                  <Check className='mt-1.5 h-4 w-4 shrink-0 text-white' />
                   <p className='text-left'>
-                    Unlimited recommended search results for jobs and candidate
-                    matches
+                    Unlimited recommended search results for jobs and candidate matches
                   </p>
                 </div>
                 <div className='flex items-start gap-3'>
-                  <Check className='mt-1.5 h-4 w-4 shrink-0 text-primary' />
+                  <Check className='mt-1.5 h-4 w-4 shrink-0 text-white' />
                   <p className='text-left'>
-                    Access premium matching and priority discovery for both
-                    sides
+                    Access premium matching and priority discovery for both sides
                   </p>
                 </div>
               </div>

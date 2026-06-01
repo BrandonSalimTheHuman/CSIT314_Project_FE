@@ -257,7 +257,12 @@ export default function CandidateSettingsPage() {
 
             {/* Name — below banner in normal flow */}
             <div className="mt-3">
-              <h1 className="font-bold text-2xl">{profile.fullName}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="font-bold text-2xl">{profile.fullName}</h1>
+                <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-[#0A65CC] ring-1 ring-blue-200">
+                  Free
+                </span>
+              </div>
               <p className="text-muted-foreground">
                 {LEVEL_LABELS[profile.candidateLevel]} · {EXPERIENCE_LABELS[profile.yearsOfExperience]} experience
               </p>
