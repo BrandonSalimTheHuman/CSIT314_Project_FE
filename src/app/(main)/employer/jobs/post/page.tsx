@@ -277,10 +277,13 @@ export default function EmployerJobPostPage() {
                     );
                   })}
                 </div>
-                <div className='min-h-[220px] rounded-b-3xl px-4 py-4'>
+                <div
+                  className='min-h-[220px] rounded-b-3xl'
+                  onClick={() => editor?.commands.focus()}
+                >
                   {editorIsMounted ? (
                     <EditorContent
-                      className='min-h-[180px] focus:outline-none list-disc pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:list-item'
+                      className='min-h-[220px] focus:outline-none list-disc [&_.tiptap]:min-h-[220px] [&_.tiptap]:p-4 [&_.tiptap]:focus:outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:list-item'
                       editor={editor}
                     />
                   ) : (
