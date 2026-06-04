@@ -49,6 +49,10 @@ const workExpSchema = z.object({
 });
 
 const candidateSchema = z.object({
+  // Step 1 – account
+  email: z.string().email('Please enter a valid email address.'),
+  password: z.string().min(8, 'Password must be at least 8 characters.'),
+  confirmPassword: z.string().min(1, 'Please confirm your password.'),
   // Step 1 – personal info
   fullName: z.string().min(1, 'Full name is required.'),
   phoneNumber: z.string().min(1, 'Phone number is required.'),
@@ -67,11 +71,25 @@ const candidateSchema = z.object({
   educationLevel: z.string().min(1, 'Please select your education level.'),
   fieldOfStudy: z.string().min(1, 'Field of study is required.'),
   workExperiences: z.array(workExpSchema),
+}).superRefine((data, ctx) => {
+  if (data.confirmPassword.length > 0 && data.password !== data.confirmPassword) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Passwords do not match.',
+      path: ['confirmPassword'],
+    });
+  }
 });
 
 type CandidateFormData = z.infer<typeof candidateSchema>;
 
 const STEP1_FIELDS: (keyof CandidateFormData)[] = [
+  'email',
+  'password',
+  'confirmPassword',
+];
+
+const STEP2_FIELDS: (keyof CandidateFormData)[] = [
   'fullName',
   'phoneNumber',
   'gender',
@@ -89,6 +107,9 @@ export function RegisterFormCandidate() {
     resolver: zodResolver(candidateSchema),
     defaultValues: {
       fullName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
       phoneNumber: '',
       gender: '',
       dateOfBirth: '',
@@ -114,8 +135,9 @@ export function RegisterFormCandidate() {
   } = useFieldArray({ control: form.control, name: 'workExperiences' });
 
   const handleContinue = async () => {
-    const valid = await form.trigger(STEP1_FIELDS);
-    if (valid) setStep(2);
+    const fields = step === 1 ? STEP1_FIELDS : STEP2_FIELDS;
+    const valid = await form.trigger(fields);
+    if (valid) setStep(step + 1);
   };
 
   const onSubmit = (data: CandidateFormData) => {
@@ -136,15 +158,66 @@ export function RegisterFormCandidate() {
     >
       {/* Step indicator */}
       <div className='flex items-center justify-between text-sm text-muted-foreground'>
-        <span className='font-medium text-foreground'>Step {step} of 2</span>
+        <span className='font-medium text-foreground'>Step {step} of 3</span>
         <div className='flex gap-1.5'>
           <span className={`h-2 w-8 rounded-full transition-colors ${step >= 1 ? 'bg-primary' : 'bg-muted'}`} />
           <span className={`h-2 w-8 rounded-full transition-colors ${step >= 2 ? 'bg-primary' : 'bg-muted'}`} />
+          <span className={`h-2 w-8 rounded-full transition-colors ${step >= 3 ? 'bg-primary' : 'bg-muted'}`} />
         </div>
       </div>
 
       {/* ─── STEP 1 ───────────────────────────────────────────────────────── */}
       {step === 1 && (
+        <>
+          <Separator className='my-6' />
+
+          {/* Account */}
+          <div className='grid gap-4 sm:grid-cols-2'>
+            <Controller
+              control={form.control}
+              name='email'
+              render={({ field, fieldState }) => (
+                <Field className='gap-1.5 sm:col-span-2' data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor='register-email'>Email Address</FieldLabel>
+                  <Input {...field} id='register-email' type='email' placeholder='you@example.com' className='py-6' aria-invalid={fieldState.invalid} />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <Controller
+              control={form.control}
+              name='password'
+              render={({ field, fieldState }) => (
+                <Field className='gap-1.5' data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor='register-password'>Password</FieldLabel>
+                  <Input {...field} id='register-password' type='password' placeholder='Create a password' className='py-6' aria-invalid={fieldState.invalid} />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <Controller
+              control={form.control}
+              name='confirmPassword'
+              render={({ field, fieldState }) => (
+                <Field className='gap-1.5' data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor='register-confirm-password'>Confirm Password</FieldLabel>
+                  <Input {...field} id='register-confirm-password' type='password' placeholder='Re-enter password' className='py-6' aria-invalid={fieldState.invalid} />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+          </div>
+
+          <Separator className='my-6' />
+
+          <Button className='h-12 w-full' type='button' onClick={handleContinue}>
+            Continue
+          </Button>
+        </>
+      )}
+
+      {/* ─── STEP 2 ───────────────────────────────────────────────────────── */}
+      {step === 2 && (
         <>
           <Separator className='my-6' />
 
@@ -345,14 +418,20 @@ export function RegisterFormCandidate() {
 
           <Separator className='my-6' />
 
-          <Button className='h-12 w-full' type='button' onClick={handleContinue}>
-            Continue
-          </Button>
+          <div className='flex gap-3'>
+            <Button className='h-12 flex-1' type='button' variant='outline' onClick={() => setStep(1)}>
+              <ChevronLeft className='mr-1 size-4' />
+              Back
+            </Button>
+            <Button className='h-12 flex-1' type='button' onClick={handleContinue}>
+              Continue
+            </Button>
+          </div>
         </>
       )}
 
       {/* ─── STEP 2 ───────────────────────────────────────────────────────── */}
-      {step === 2 && (
+      {step === 3 && (
         <>
           <Separator className='my-6' />
 
@@ -483,7 +562,7 @@ export function RegisterFormCandidate() {
 
           {/* Navigation */}
           <div className='flex gap-3'>
-            <Button className='h-12 flex-1' type='button' variant='outline' onClick={() => setStep(1)}>
+            <Button className='h-12 flex-1' type='button' variant='outline' onClick={() => setStep(2)}>
               <ChevronLeft className='mr-1 size-4' />
               Back
             </Button>
@@ -498,6 +577,9 @@ export function RegisterFormCandidate() {
 // ─── RegisterFormEmployer ─────────────────────────────────────────────────────
 
 const formSchema2 = z.object({
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
+  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
+  confirmPassword: z.string().min(1, { message: 'Please confirm your password.' }),
   fullName: z.string().min(1, { message: 'Full name is required.' }),
   phoneNumber: z.string().min(1, { message: 'Phone number is required.' }),
   companyName: z.string().min(1, { message: 'Company name is required.' }),
@@ -506,12 +588,25 @@ const formSchema2 = z.object({
     .min(1, { message: 'Company information is required.' }),
   companyPicture: z.any().optional(),
   profilePicture: z.any().optional(),
+}).superRefine((data, ctx) => {
+  if (data.confirmPassword.length > 0 && data.password !== data.confirmPassword) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Passwords do not match.',
+      path: ['confirmPassword'],
+    });
+  }
 });
 
 export function RegisterFormEmployer() {
+  const [step, setStep] = useState(1);
+
   const form = useForm<z.infer<typeof formSchema2>>({
     resolver: zodResolver(formSchema2),
     defaultValues: {
+      email: '',
+      password: '',
+      confirmPassword: '',
       fullName: '',
       phoneNumber: '',
       companyName: '',
@@ -520,6 +615,11 @@ export function RegisterFormEmployer() {
       profilePicture: undefined,
     },
   });
+
+  const handleContinue = async () => {
+    const valid = await form.trigger(['email', 'password', 'confirmPassword']);
+    if (valid) setStep(2);
+  };
 
   const onSubmit = (data: z.infer<typeof formSchema2>) => {
     toast('You submitted the following values', {
@@ -537,85 +637,153 @@ export function RegisterFormEmployer() {
       onSubmit={form.handleSubmit(onSubmit)}
       className='flex flex-col rounded-3xl border border-blue-500/20 bg-background p-6 shadow-sm sm:p-8'
     >
-      {/* Profile picture + Name + Phone */}
-      <div className='grid gap-6 lg:grid-cols-[200px_minmax(0,1fr)]'>
-        <Controller
-          control={form.control}
-          name='profilePicture'
-          render={({ field }) => (
-            <ProfilePictureUpload id='register-profile-picture' value={field.value} onChange={field.onChange} />
-          )}
-        />
-        <FieldGroup className='grid gap-4 content-start'>
-          <Controller
-            control={form.control}
-            name='fullName'
-            render={({ field, fieldState }) => (
-              <Field className='gap-1.5' data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor='register-full-name'>Full Name</FieldLabel>
-                <Input {...field} id='register-full-name' placeholder='Your full name' className='py-6' aria-invalid={fieldState.invalid} />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-          <Controller
-            control={form.control}
-            name='phoneNumber'
-            render={({ field, fieldState }) => (
-              <Field className='gap-1.5' data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor='register-phone-number'>Phone Number</FieldLabel>
-                <Input {...field} id='register-phone-number' placeholder='+1 (555) 000-0000' className='py-6' aria-invalid={fieldState.invalid} />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-        </FieldGroup>
+      {/* Step indicator */}
+      <div className='flex items-center justify-between text-sm text-muted-foreground'>
+        <span className='font-medium text-foreground'>Step {step} of 2</span>
+        <div className='flex gap-1.5'>
+          <span className={`h-2 w-8 rounded-full transition-colors ${step >= 1 ? 'bg-primary' : 'bg-muted'}`} />
+          <span className={`h-2 w-8 rounded-full transition-colors ${step >= 2 ? 'bg-primary' : 'bg-muted'}`} />
+        </div>
       </div>
 
-      <Separator className='my-6' />
+      {/* ─── STEP 1 ───────────────────────────────────────────────────────── */}
+      {step === 1 && (
+        <>
+          <Separator className='my-6' />
 
-      {/* Company picture */}
-      <Controller
-        control={form.control}
-        name='companyPicture'
-        render={({ field }) => (
-          <CompanyPictureUpload id='register-company-picture' value={field.value} onChange={field.onChange} />
-        )}
-      />
+          {/* Account */}
+          <div className='grid gap-4 sm:grid-cols-2'>
+            <Controller
+              control={form.control}
+              name='email'
+              render={({ field, fieldState }) => (
+                <Field className='gap-1.5 sm:col-span-2' data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor='register-email'>Email Address</FieldLabel>
+                  <Input {...field} id='register-email' type='email' placeholder='you@company.com' className='py-6' aria-invalid={fieldState.invalid} />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <Controller
+              control={form.control}
+              name='password'
+              render={({ field, fieldState }) => (
+                <Field className='gap-1.5' data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor='register-password'>Password</FieldLabel>
+                  <Input {...field} id='register-password' type='password' placeholder='Create a password' className='py-6' aria-invalid={fieldState.invalid} />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <Controller
+              control={form.control}
+              name='confirmPassword'
+              render={({ field, fieldState }) => (
+                <Field className='gap-1.5' data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor='register-confirm-password'>Confirm Password</FieldLabel>
+                  <Input {...field} id='register-confirm-password' type='password' placeholder='Re-enter password' className='py-6' aria-invalid={fieldState.invalid} />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+          </div>
 
-      <Separator className='my-6' />
+          <Separator className='my-6' />
 
-      {/* Company details */}
-      <div className='grid gap-4'>
-        <Controller
-          control={form.control}
-          name='companyName'
-          render={({ field, fieldState }) => (
-            <Field className='gap-1.5' data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor='register-company-name'>Company Name</FieldLabel>
-              <Input {...field} id='register-company-name' placeholder='Your company name' className='py-6' aria-invalid={fieldState.invalid} />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-        <Controller
-          control={form.control}
-          name='companyInformation'
-          render={({ field, fieldState }) => (
-            <Field className='gap-1.5' data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor='register-company-information'>Company Information</FieldLabel>
-              <Textarea {...field} id='register-company-information' placeholder='Describe your company…' rows={4} aria-invalid={fieldState.invalid} />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-      </div>
+          <Button className='h-12 w-full' type='button' onClick={handleContinue}>
+            Continue
+          </Button>
+        </>
+      )}
 
-      <Separator className='my-6' />
+      {/* ─── STEP 2 ───────────────────────────────────────────────────────── */}
+      {step === 2 && (
+        <>
+          {/* Profile picture + Name + Phone */}
+          <div className='mt-6 grid gap-6 lg:grid-cols-[200px_minmax(0,1fr)]'>
+            <Controller
+              control={form.control}
+              name='profilePicture'
+              render={({ field }) => (
+                <ProfilePictureUpload id='register-profile-picture' value={field.value} onChange={field.onChange} />
+              )}
+            />
+            <FieldGroup className='grid gap-4 content-start'>
+              <Controller
+                control={form.control}
+                name='fullName'
+                render={({ field, fieldState }) => (
+                  <Field className='gap-1.5' data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor='register-full-name'>Full Name</FieldLabel>
+                    <Input {...field} id='register-full-name' placeholder='Your full name' className='py-6' aria-invalid={fieldState.invalid} />
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
+              <Controller
+                control={form.control}
+                name='phoneNumber'
+                render={({ field, fieldState }) => (
+                  <Field className='gap-1.5' data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor='register-phone-number'>Phone Number</FieldLabel>
+                    <Input {...field} id='register-phone-number' placeholder='+1 (555) 000-0000' className='py-6' aria-invalid={fieldState.invalid} />
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
+            </FieldGroup>
+          </div>
 
-      <Button className='h-12 w-full' type='submit'>
-        Continue
-      </Button>
+          <Separator className='my-6' />
+
+          {/* Company picture */}
+          <Controller
+            control={form.control}
+            name='companyPicture'
+            render={({ field }) => (
+              <CompanyPictureUpload id='register-company-picture' value={field.value} onChange={field.onChange} />
+            )}
+          />
+
+          <Separator className='my-6' />
+
+          {/* Company details */}
+          <div className='grid gap-4'>
+            <Controller
+              control={form.control}
+              name='companyName'
+              render={({ field, fieldState }) => (
+                <Field className='gap-1.5' data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor='register-company-name'>Company Name</FieldLabel>
+                  <Input {...field} id='register-company-name' placeholder='Your company name' className='py-6' aria-invalid={fieldState.invalid} />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <Controller
+              control={form.control}
+              name='companyInformation'
+              render={({ field, fieldState }) => (
+                <Field className='gap-1.5' data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor='register-company-information'>Company Information</FieldLabel>
+                  <Textarea {...field} id='register-company-information' placeholder='Describe your company…' rows={4} aria-invalid={fieldState.invalid} />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+          </div>
+
+          <Separator className='my-6' />
+
+          <div className='flex gap-3'>
+            <Button className='h-12 flex-1' type='button' variant='outline' onClick={() => setStep(1)}>
+              <ChevronLeft className='mr-1 size-4' />
+              Back
+            </Button>
+            <Button className='h-12 flex-1' type='submit'>Submit</Button>
+          </div>
+        </>
+      )}
     </form>
   );
 }
