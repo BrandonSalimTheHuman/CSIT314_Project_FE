@@ -18,6 +18,7 @@ import {
 
 import heroImage from "../../../../media/homepageimage.svg";
 import logoImage from "../../../../media/logo.svg";
+import { HeroSearch } from "./_components/hero-search";
 import { TestimonialsCarousel } from "./_components/testimonials-carousel";
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -176,29 +177,7 @@ export default function HomepagePage() {
               your career — all in one place.
             </p>
 
-            {/* Search Bar */}
-            <div className="flex max-w-[600px] items-center gap-2 rounded-xl bg-white p-3 shadow-sm">
-              <div className="flex flex-1 items-center gap-2 px-3">
-                <Search size={20} className="shrink-0 text-[#0A65CC]" />
-                <input
-                  type="text"
-                  placeholder="Job title, Keyword..."
-                  className="w-full bg-transparent text-[#18191C] text-sm outline-none placeholder:text-[#9199A3]"
-                />
-              </div>
-              <button
-                type="button"
-                className="shrink-0 rounded-lg bg-[#0A65CC] px-6 py-3 font-semibold text-sm text-white transition-colors hover:bg-[#0855b0]"
-              >
-                Find Job
-              </button>
-            </div>
-
-            {/* Popular tags */}
-            <p className="mt-5 text-[#767F8C] text-sm">
-              <span className="font-medium text-[#18191C]">Popular:</span> Designer, Developer, Web, IOS, PHP, Senior,
-              Engineer
-            </p>
+            <HeroSearch />
           </div>
 
           {/* Right – Hero Illustration */}
