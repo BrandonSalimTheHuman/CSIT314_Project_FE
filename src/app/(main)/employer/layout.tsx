@@ -1,16 +1,19 @@
 import type { ReactNode } from 'react';
 
-import { TopNav } from '@/components/top-nav';
+import { AuthGuard } from '@/components/auth-guard';
 import { EmployerBottomNav } from '@/components/employer-bottom-nav';
+import { TopNav } from '@/components/top-nav';
 
 export default function Layout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <main>
-      <TopNav role="employer" />
-      {children}
-      <EmployerBottomNav />
-    </main>
+    <AuthGuard requiredRole="employer">
+      <main>
+        <TopNav role="employer" />
+        {children}
+        <EmployerBottomNav />
+      </main>
+    </AuthGuard>
   );
 }

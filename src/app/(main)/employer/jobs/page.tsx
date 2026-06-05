@@ -1,310 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import Link from "next/link";
 
-import { ArrowLeft, ArrowRight, MapPin, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Briefcase, Loader2, MapPin, Search } from "lucide-react";
 
+import { ApiError, apiFetch } from "@/lib/api/client";
+import type { JobPostingOut, Page } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const _jobTypeOptions = ["Full time", "Part time", "Internship", "Remote", "Temporary", "Contract based"];
-
 const sortOptions = ["Latest", "Oldest"];
 const perPageOptions = ["10 per page", "12 per page", "24 per page"];
-
-const jobPostings = [
-  {
-    company: "Reddit",
-    logo: "https://cdn.simpleicons.org/reddit/FF4500",
-    location: "United Kingdom of Great Britain",
-    position: "Marketing Officer",
-    jobType: "Full time",
-    salary: "$30K-$35K",
-  },
-  {
-    company: "Figma",
-    logo: "https://cdn.simpleicons.org/figma/000000",
-    location: "Canada",
-    position: "UI/UX Designer",
-    jobType: "Full time",
-    salary: "$50K-$70K",
-  },
-  {
-    company: "Microsoft",
-    logo: "https://cdn.simpleicons.org/microsoft/5F6BED",
-    location: "Australia",
-    position: "Product Designer",
-    jobType: "Full time",
-    salary: "$40K-$50K",
-  },
-  {
-    company: "Instagram",
-    logo: "https://cdn.simpleicons.org/instagram/E4405F",
-    location: "Australia",
-    position: "Front End Developer",
-    jobType: "Contract based",
-    salary: "$50K-$80K",
-  },
-  {
-    company: "Dribbble",
-    logo: "https://cdn.simpleicons.org/dribbble/EA4C89",
-    location: "California",
-    position: "Senior UX Designer",
-    jobType: "Full time",
-    salary: "$50K-$80K",
-  },
-  {
-    company: "Upwork",
-    logo: "https://cdn.simpleicons.org/upwork/6FDA44",
-    location: "France",
-    position: "Technical Support Specialist",
-    jobType: "Full time",
-    salary: "$35K-$40K",
-  },
-  {
-    company: "Freepik",
-    logo: "https://cdn.simpleicons.org/freepik/00B5E2",
-    location: "China",
-    position: "Visual Designer",
-    jobType: "Full time",
-    salary: "$10K-$15K",
-  },
-  {
-    company: "Twitter",
-    logo: "https://cdn.simpleicons.org/x/000000",
-    location: "Canada",
-    position: "Senior UX Designer",
-    jobType: "Internship",
-    salary: "$50K-$60K",
-  },
-  {
-    company: "Slack",
-    logo: "https://cdn.simpleicons.org/slack/611F69",
-    location: "Germany",
-    position: "Networking Engineer",
-    jobType: "Remote",
-    salary: "$50K-$90K",
-  },
-  {
-    company: "Facebook",
-    logo: "https://cdn.simpleicons.org/facebook/1877F2",
-    location: "United Kingdom of Great Britain",
-    position: "Software Engineer",
-    jobType: "Part time",
-    salary: "$15K-$20K",
-  },
-  {
-    company: "Youtube",
-    logo: "https://cdn.simpleicons.org/youtube/FF0000",
-    location: "Germany",
-    position: "Interaction Designer",
-    jobType: "Full time",
-    salary: "$20K-$25K",
-  },
-  {
-    company: "Spotify",
-    logo: "https://cdn.simpleicons.org/spotify/1DB954",
-    location: "Sweden",
-    position: "Product Manager",
-    jobType: "Remote",
-    salary: "$60K-$90K",
-  },
-  {
-    company: "Reddit2",
-    logo: "https://cdn.simpleicons.org/reddit/FF4500",
-    location: "United Kingdom of Great Britain",
-    position: "Marketing Officer",
-    jobType: "Full time",
-    salary: "$30K-$35K",
-  },
-  {
-    company: "Figma2",
-    logo: "https://cdn.simpleicons.org/figma/000000",
-    location: "Canada",
-    position: "UI/UX Designer",
-    jobType: "Full time",
-    salary: "$50K-$70K",
-  },
-  {
-    company: "Microsoft2",
-    logo: "https://cdn.simpleicons.org/microsoft/5F6BED",
-    location: "Australia",
-    position: "Product Designer",
-    jobType: "Full time",
-    salary: "$40K-$50K",
-  },
-  {
-    company: "Instagram2",
-    logo: "https://cdn.simpleicons.org/instagram/E4405F",
-    location: "Australia",
-    position: "Front End Developer",
-    jobType: "Contract based",
-    salary: "$50K-$80K",
-  },
-  {
-    company: "Dribbble2",
-    logo: "https://cdn.simpleicons.org/dribbble/EA4C89",
-    location: "California",
-    position: "Senior UX Designer",
-    jobType: "Full time",
-    salary: "$50K-$80K",
-  },
-  {
-    company: "Upwork2",
-    logo: "https://cdn.simpleicons.org/upwork/6FDA44",
-    location: "France",
-    position: "Technical Support Specialist",
-    jobType: "Full time",
-    salary: "$35K-$40K",
-  },
-  {
-    company: "Freepik2",
-    logo: "https://cdn.simpleicons.org/freepik/00B5E2",
-    location: "China",
-    position: "Visual Designer",
-    jobType: "Full time",
-    salary: "$10K-$15K",
-  },
-  {
-    company: "Twitter2",
-    logo: "https://cdn.simpleicons.org/x/000000",
-    location: "Canada",
-    position: "Senior UX Designer",
-    jobType: "Internship",
-    salary: "$50K-$60K",
-  },
-  {
-    company: "Slack2",
-    logo: "https://cdn.simpleicons.org/slack/611F69",
-    location: "Germany",
-    position: "Networking Engineer",
-    jobType: "Remote",
-    salary: "$50K-$90K",
-  },
-  {
-    company: "Facebook2",
-    logo: "https://cdn.simpleicons.org/facebook/1877F2",
-    location: "United Kingdom of Great Britain",
-    position: "Software Engineer",
-    jobType: "Part time",
-    salary: "$15K-$20K",
-  },
-  {
-    company: "Youtube2",
-    logo: "https://cdn.simpleicons.org/youtube/FF0000",
-    location: "Germany",
-    position: "Interaction Designer",
-    jobType: "Full time",
-    salary: "$20K-$25K",
-  },
-  {
-    company: "Spotify2",
-    logo: "https://cdn.simpleicons.org/spotify/1DB954",
-    location: "Sweden",
-    position: "Product Manager",
-    jobType: "Remote",
-    salary: "$60K-$90K",
-  },
-  {
-    company: "Reddit3",
-    logo: "https://cdn.simpleicons.org/reddit/FF4500",
-    location: "United Kingdom of Great Britain",
-    position: "Marketing Officer",
-    jobType: "Full time",
-    salary: "$30K-$35K",
-  },
-  {
-    company: "Figma3",
-    logo: "https://cdn.simpleicons.org/figma/000000",
-    location: "Canada",
-    position: "UI/UX Designer",
-    jobType: "Full time",
-    salary: "$50K-$70K",
-  },
-  {
-    company: "Microsoft3",
-    logo: "https://cdn.simpleicons.org/microsoft/5F6BED",
-    location: "Australia",
-    position: "Product Designer",
-    jobType: "Full time",
-    salary: "$40K-$50K",
-  },
-  {
-    company: "Instagram3",
-    logo: "https://cdn.simpleicons.org/instagram/E4405F",
-    location: "Australia",
-    position: "Front End Developer",
-    jobType: "Contract based",
-    salary: "$50K-$80K",
-  },
-  {
-    company: "Dribbble3",
-    logo: "https://cdn.simpleicons.org/dribbble/EA4C89",
-    location: "California",
-    position: "Senior UX Designer",
-    jobType: "Full time",
-    salary: "$50K-$80K",
-  },
-  {
-    company: "Upwork3",
-    logo: "https://cdn.simpleicons.org/upwork/6FDA44",
-    location: "France",
-    position: "Technical Support Specialist",
-    jobType: "Full time",
-    salary: "$35K-$40K",
-  },
-  {
-    company: "Freepik3",
-    logo: "https://cdn.simpleicons.org/freepik/00B5E2",
-    location: "China",
-    position: "Visual Designer",
-    jobType: "Full time",
-    salary: "$10K-$15K",
-  },
-  {
-    company: "Twitter3",
-    logo: "https://cdn.simpleicons.org/x/000000",
-    location: "Canada",
-    position: "Senior UX Designer",
-    jobType: "Internship",
-    salary: "$50K-$60K",
-  },
-  {
-    company: "Slack3",
-    logo: "https://cdn.simpleicons.org/slack/611F69",
-    location: "Germany",
-    position: "Networking Engineer",
-    jobType: "Remote",
-    salary: "$50K-$90K",
-  },
-  {
-    company: "Facebook3",
-    logo: "https://cdn.simpleicons.org/facebook/1877F2",
-    location: "United Kingdom of Great Britain",
-    position: "Software Engineer",
-    jobType: "Part time",
-    salary: "$15K-$20K",
-  },
-  {
-    company: "Youtube3",
-    logo: "https://cdn.simpleicons.org/youtube/FF0000",
-    location: "Germany",
-    position: "Interaction Designer",
-    jobType: "Full time",
-    salary: "$20K-$25K",
-  },
-  {
-    company: "Spotify3",
-    logo: "https://cdn.simpleicons.org/spotify/1DB954",
-    location: "Sweden",
-    position: "Product Manager",
-    jobType: "Remote",
-    salary: "$60K-$90K",
-  },
-];
 
 const getVisiblePages = (page: number, pageCount: number) => {
   const half = Math.floor(5 / 2);
@@ -319,30 +28,30 @@ const getVisiblePages = (page: number, pageCount: number) => {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 };
 
-const JobCard = ({ job, index }: { job: (typeof jobPostings)[number]; index: number }) => (
+const JobCard = ({ job }: { job: JobPostingOut }) => (
   <Link
-    href={`/employer/jobs/${index + 1}`}
+    href={`/employer/jobs/${job.job_id}`}
     className="block rounded-2xl border border-border bg-white p-6 shadow-sm transition hover:border-sky-600 hover:shadow-md"
   >
     <div className="flex items-center gap-4">
-      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
-        <img src={job.logo} alt={job.company} className="h-full w-full object-cover" />
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted">
+        <Briefcase className="size-6 text-muted-foreground" />
       </div>
       <div className="flex flex-col gap-1">
-        <div className="font-medium text-foreground text-lg">{job.company}</div>
+        <div className="font-medium text-foreground text-lg">{job.title}</div>
         <div className="flex items-center gap-1.5 text-slate-500 text-sm">
           <MapPin className="size-4" />
-          {job.location}
+          {job.location ?? "Not specified"}
         </div>
       </div>
     </div>
     <div className="mt-6">
-      <h3 className="font-semibold text-foreground text-xl tracking-tight">{job.position}</h3>
+      <h3 className="font-semibold text-foreground text-xl tracking-tight">{job.title}</h3>
 
       <div className="mt-2 flex items-center gap-2 font-medium text-slate-500 text-sm">
-        <span>{job.jobType}</span>
+        <span>{job.work_mode ?? "N/A"}</span>
         <span>•</span>
-        <span>{job.salary}</span>
+        <span>{job.salary_range ?? "N/A"}</span>
       </div>
     </div>
   </Link>
@@ -354,29 +63,63 @@ export default function EmployerJobPostManagementPage() {
   const [perPage, setPerPage] = useState("10 per page");
   const [page, setPage] = useState(1);
 
-  const filteredJobs = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return jobPostings.filter((job) => {
-      if (!query) return true;
-      return [job.company, job.position, job.location, job.jobType].join(" ").toLowerCase().includes(query);
-    });
-  }, [search]);
-
-  const sortedJobs = useMemo(() => {
-    return [...filteredJobs].sort((a, b) => {
-      if (sort === "Oldest") {
-        return a.company.localeCompare(b.company);
-      }
-      return b.company.localeCompare(a.company);
-    });
-  }, [filteredJobs, sort]);
+  const [jobs, setJobs] = useState<JobPostingOut[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const pageSize = Number(perPage.split(" ")[0]);
-  const pageCount = Math.max(1, Math.ceil(sortedJobs.length / pageSize));
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchJobs() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await apiFetch<Page<JobPostingOut>>(
+          `/job-postings?page=${page}&size=${pageSize}`,
+        );
+        if (cancelled) return;
+        setJobs(data.items);
+        setTotal(data.total);
+        setTotalPages(data.pages);
+      } catch (err) {
+        if (cancelled) return;
+        if (err instanceof ApiError) {
+          setError(err.message);
+        } else {
+          setError("Failed to load jobs.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetchJobs();
+    return () => {
+      cancelled = true;
+    };
+  }, [page, pageSize]);
+
+  // Client-side search filter on fetched results
+  const filteredJobs = jobs.filter((job) => {
+    const query = search.trim().toLowerCase();
+    if (!query) return true;
+    return [job.title, job.location, job.work_mode, job.salary_range]
+      .join(" ")
+      .toLowerCase()
+      .includes(query);
+  });
+
+  const sortedJobs = [...filteredJobs].sort((a, b) => {
+    if (sort === "Oldest") {
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    }
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  const pageCount = totalPages;
   const currentPage = Math.min(page, pageCount);
-
-  const currentJobs = sortedJobs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-
   const visiblePages = getVisiblePages(currentPage, pageCount);
 
   return (
@@ -427,7 +170,7 @@ export default function EmployerJobPostManagementPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={perPage} onValueChange={setPerPage}>
+            <Select value={perPage} onValueChange={(v) => { setPerPage(v); setPage(1); }}>
               <SelectTrigger className="h-12 w-[180px] border-slate-200 bg-white py-5 text-slate-600">
                 <SelectValue placeholder="12 per page" />
               </SelectTrigger>
@@ -442,11 +185,28 @@ export default function EmployerJobPostManagementPage() {
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {currentJobs.map((job, i) => (
-            <JobCard key={`${job.company}-${job.position}`} job={job} index={i} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="size-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-20">
+            <p className="text-destructive">{error}</p>
+            <Button variant="outline" onClick={() => setPage(page)}>
+              Retry
+            </Button>
+          </div>
+        ) : sortedJobs.length === 0 ? (
+          <div className="flex items-center justify-center py-20">
+            <p className="text-muted-foreground">No jobs found.</p>
+          </div>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-3">
+            {sortedJobs.map((job) => (
+              <JobCard key={job.job_id} job={job} />
+            ))}
+          </div>
+        )}
 
         <div className="mt-12 flex items-center justify-center gap-4">
           <Button
@@ -468,8 +228,8 @@ export default function EmployerJobPostManagementPage() {
                   onClick={() => setPage(pageNum)}
                   className={`flex size-10 items-center justify-center rounded-full font-medium text-sm transition-colors ${
                     isCurrent
-                      ? "bg-[#0061C2] text-white" // Target dark blue circle
-                      : "text-slate-500 hover:bg-slate-100 hover:text-slate-900" // Target gray hover
+                      ? "bg-[#0061C2] text-white"
+                      : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
                   }
             `}
                 >

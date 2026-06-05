@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -37,6 +38,9 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { TagInput } from '@/components/ui/tag-input';
 import { Textarea } from '@/components/ui/textarea';
+import { ApiError, apiFetch } from '@/lib/api/client';
+import type { CandidateOut, ResumeOut, WorkExperienceOut } from '@/lib/api/types';
+import { supabase } from '@/lib/supabase/client';
 
 // ─── Candidate schema ────────────────────────────────────────────────────────
 
@@ -102,6 +106,11 @@ const STEP2_FIELDS: (keyof CandidateFormData)[] = [
 
 export function RegisterFormCandidate() {
   const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  const [resumeStatus, setResumeStatus] = useState<
+    'idle' | 'uploading' | 'parsing' | 'done' | 'failed'
+  >('idle');
+  const router = useRouter();
 
   const form = useForm<CandidateFormData>({
     resolver: zodResolver(candidateSchema),
@@ -135,19 +144,200 @@ export function RegisterFormCandidate() {
   } = useFieldArray({ control: form.control, name: 'workExperiences' });
 
   const handleContinue = async () => {
-    const fields = step === 1 ? STEP1_FIELDS : STEP2_FIELDS;
-    const valid = await form.trigger(fields);
+    const valid = await form.trigger(STEP2_FIELDS);
     if (valid) setStep(step + 1);
   };
 
-  const onSubmit = (data: CandidateFormData) => {
-    toast('You submitted the following values', {
-      description: (
-        <pre className='mt-2 w-[320px] rounded-md bg-neutral-950 p-4'>
-          <code className='text-white'>{JSON.stringify(data, null, 2)}</code>
-        </pre>
+  // Step 1: validate account fields, then create the Supabase auth account.
+  // On success we advance to Step 2 (resume upload) using the issued session.
+  const handleSignup = async () => {
+    const valid = await form.trigger(STEP1_FIELDS);
+    if (!valid) return;
+
+    const { email, password } = form.getValues();
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { role: 'candidate' } },
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      // Email-confirmation enabled → no session is returned. The user must
+      // confirm before they can hit authenticated backend endpoints.
+      if (!data.session) {
+        toast.info(
+          'Account created. Please check your email to confirm, then log in to continue.',
+        );
+        return;
+      }
+
+      toast.success('Account created.');
+      setStep(2);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Sign up failed.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Poll the resume's parse_status until the backend background task finishes.
+  const pollParseStatus = async (
+    resumeId: number,
+  ): Promise<'success' | 'failed'> => {
+    const deadline = Date.now() + 60_000; // give the LLM parser up to 60s
+    while (Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const resume = await apiFetch<ResumeOut>(`/resumes/${resumeId}`);
+      if (resume.parse_status === 'success') return 'success';
+      if (resume.parse_status === 'failed') return 'failed';
+    }
+    return 'failed';
+  };
+
+  // Populate the form from the parsed candidate profile.
+  const applyAutofill = (candidate: CandidateOut) => {
+    if (candidate.skills?.length) {
+      form.setValue(
+        'skills',
+        candidate.skills.map((s) => s.skill_name),
+        { shouldValidate: true },
+      );
+    }
+    if (candidate.work_experiences?.length) {
+      form.setValue(
+        'workExperiences',
+        candidate.work_experiences.map((w) => ({
+          companyName: w.company_name ?? '',
+          jobTitle: w.job_title ?? '',
+          startDate: w.start_date ?? '',
+          endDate: w.end_date ?? '',
+          description: w.description ?? '',
+        })),
+      );
+    }
+    if (candidate.education_level) {
+      form.setValue('educationLevel', candidate.education_level);
+    }
+    if (candidate.field_of_study) {
+      form.setValue('fieldOfStudy', candidate.field_of_study);
+    }
+  };
+
+  // Step 2: upload the resume, wait for parsing, then autofill skills /
+  // work experience / education from the parsed candidate profile.
+  const handleResumeUpload = async (file: File) => {
+    setResumeStatus('uploading');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const resume = await apiFetch<ResumeOut>('/resumes', {
+        method: 'POST',
+        body: formData,
+      });
+
+      setResumeStatus('parsing');
+      const result = await pollParseStatus(resume.resume_id);
+      if (result === 'failed') {
+        setResumeStatus('failed');
+        toast.error(
+          "We couldn't read your resume automatically. Please fill in the fields manually.",
+        );
+        return;
+      }
+
+      const candidate = await apiFetch<CandidateOut>('/candidates/me');
+      applyAutofill(candidate);
+      setResumeStatus('done');
+      toast.success('Resume parsed — we filled in what we found.');
+    } catch (err) {
+      setResumeStatus('failed');
+      toast.error(
+        err instanceof ApiError ? err.message : 'Resume upload failed.',
+      );
+    }
+  };
+
+  // Replace all of the candidate's work experiences with the form's list.
+  // Parsed rows already in the DB are cleared and re-created as manual so the
+  // saved state always matches what the user sees in the form.
+  const syncWorkExperiences = async (
+    items: CandidateFormData['workExperiences'],
+  ) => {
+    const existing = await apiFetch<WorkExperienceOut[]>(
+      '/candidates/me/work-experiences',
+    );
+    await Promise.all(
+      existing.map((w) =>
+        apiFetch(`/work-experiences/${w.experience_id}`, { method: 'DELETE' }),
       ),
-    });
+    );
+    for (const w of items) {
+      if (!w.companyName && !w.jobTitle) continue;
+      await apiFetch('/candidates/me/work-experiences', {
+        method: 'POST',
+        body: JSON.stringify({
+          company_name: w.companyName,
+          job_title: w.jobTitle,
+          start_date: w.startDate || null,
+          end_date: w.endDate || null,
+          description: w.description || null,
+          source: 'manual',
+        }),
+      });
+    }
+  };
+
+  const onSubmit = async (data: CandidateFormData) => {
+    setSubmitting(true);
+    try {
+      // 1. Profile fields + skills (skills replace all existing rows).
+      await apiFetch<CandidateOut>('/candidates/me', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          full_name: data.fullName,
+          phone_number: data.phoneNumber || null,
+          gender: data.gender || null,
+          date_of_birth: data.dateOfBirth || null,
+          nationality: data.nationality || null,
+          marital_status: data.maritalStatus || null,
+          website: data.website || null,
+          biography: data.biography || null,
+          years_of_experience: data.yearsOfExperience || null,
+          candidate_level: data.candidateLevel || null,
+          education_level: data.educationLevel || null,
+          field_of_study: data.fieldOfStudy || null,
+          skills: data.skills,
+        }),
+      });
+
+      // 2. Profile picture (optional).
+      if (data.profilePicture instanceof File) {
+        const pictureData = new FormData();
+        pictureData.append('file', data.profilePicture);
+        await apiFetch('/candidates/me/profile-picture', {
+          method: 'POST',
+          body: pictureData,
+        });
+      }
+
+      // 3. Work experiences.
+      await syncWorkExperiences(data.workExperiences);
+
+      toast.success('Your profile has been saved.');
+      router.push('/candidate/jobs');
+    } catch (err) {
+      toast.error(
+        err instanceof ApiError ? err.message : 'Could not save your profile.',
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -210,8 +400,13 @@ export function RegisterFormCandidate() {
 
           <Separator className='my-6' />
 
-          <Button className='h-12 w-full' type='button' onClick={handleContinue}>
-            Continue
+          <Button
+            className='h-12 w-full'
+            type='button'
+            onClick={handleSignup}
+            disabled={submitting}
+          >
+            {submitting ? 'Creating account…' : 'Submit'}
           </Button>
         </>
       )}
@@ -226,9 +421,42 @@ export function RegisterFormCandidate() {
             control={form.control}
             name='resume'
             render={({ field }) => (
-              <ResumeUpload id='register-resume' value={field.value} onChange={field.onChange} />
+              <ResumeUpload
+                id='register-resume'
+                value={field.value}
+                onChange={(file) => {
+                  field.onChange(file);
+                  if (file) {
+                    void handleResumeUpload(file);
+                  } else {
+                    setResumeStatus('idle');
+                  }
+                }}
+              />
             )}
           />
+
+          {resumeStatus === 'uploading' && (
+            <p className='mt-3 text-center text-sm text-muted-foreground'>
+              Uploading your resume…
+            </p>
+          )}
+          {resumeStatus === 'parsing' && (
+            <p className='mt-3 text-center text-sm text-muted-foreground'>
+              Reading your resume — autofilling your skills and experience…
+            </p>
+          )}
+          {resumeStatus === 'done' && (
+            <p className='mt-3 text-center text-sm text-green-600'>
+              We filled in what we found. Review and edit below.
+            </p>
+          )}
+          {resumeStatus === 'failed' && (
+            <p className='mt-3 text-center text-sm text-destructive'>
+              Couldn't read your resume automatically — please fill the fields
+              manually.
+            </p>
+          )}
 
           <Separator className='my-6' />
 
@@ -562,11 +790,13 @@ export function RegisterFormCandidate() {
 
           {/* Navigation */}
           <div className='flex gap-3'>
-            <Button className='h-12 flex-1' type='button' variant='outline' onClick={() => setStep(2)}>
+            <Button className='h-12 flex-1' type='button' variant='outline' onClick={() => setStep(2)} disabled={submitting}>
               <ChevronLeft className='mr-1 size-4' />
               Back
             </Button>
-            <Button className='h-12 flex-1' type='submit'>Submit</Button>
+            <Button className='h-12 flex-1' type='submit' disabled={submitting}>
+              {submitting ? 'Saving…' : 'Submit'}
+            </Button>
           </div>
         </>
       )}
@@ -600,6 +830,8 @@ const formSchema2 = z.object({
 
 export function RegisterFormEmployer() {
   const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema2>>({
     resolver: zodResolver(formSchema2),
@@ -616,19 +848,84 @@ export function RegisterFormEmployer() {
     },
   });
 
-  const handleContinue = async () => {
+  // Step 1: create Supabase auth account with role=employer
+  const handleSignup = async () => {
     const valid = await form.trigger(['email', 'password', 'confirmPassword']);
-    if (valid) setStep(2);
+    if (!valid) return;
+
+    const { email, password } = form.getValues();
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { role: 'employer' } },
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      if (!data.session) {
+        toast.info(
+          'Account created. Please check your email to confirm, then log in to continue.',
+        );
+        return;
+      }
+
+      toast.success('Account created.');
+      setStep(2);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Sign up failed.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const onSubmit = (data: z.infer<typeof formSchema2>) => {
-    toast('You submitted the following values', {
-      description: (
-        <pre className='mt-2 w-[320px] rounded-md bg-neutral-950 p-4'>
-          <code className='text-white'>{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
+  const onSubmit = async (data: z.infer<typeof formSchema2>) => {
+    setSubmitting(true);
+    try {
+      // 1. Update employer profile
+      await apiFetch('/employers/me', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          full_name: data.fullName,
+          company_name: data.companyName,
+          phone_number: data.phoneNumber || null,
+          company_information: data.companyInformation || null,
+        }),
+      });
+
+      // 2. Profile picture (optional)
+      if (data.profilePicture instanceof File) {
+        const pictureData = new FormData();
+        pictureData.append('file', data.profilePicture);
+        await apiFetch('/employers/me/profile-picture', {
+          method: 'POST',
+          body: pictureData,
+        });
+      }
+
+      // 3. Company picture (optional)
+      if (data.companyPicture instanceof File) {
+        const companyPicData = new FormData();
+        companyPicData.append('file', data.companyPicture);
+        await apiFetch('/employers/me/company-picture', {
+          method: 'POST',
+          body: companyPicData,
+        });
+      }
+
+      toast.success('Your profile has been saved.');
+      router.push('/employer/jobs');
+    } catch (err) {
+      toast.error(
+        err instanceof ApiError ? err.message : 'Could not save your profile.',
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -690,8 +987,13 @@ export function RegisterFormEmployer() {
 
           <Separator className='my-6' />
 
-          <Button className='h-12 w-full' type='button' onClick={handleContinue}>
-            Continue
+          <Button
+            className='h-12 w-full'
+            type='button'
+            onClick={handleSignup}
+            disabled={submitting}
+          >
+            {submitting ? 'Creating account…' : 'Submit'}
           </Button>
         </>
       )}
@@ -776,11 +1078,13 @@ export function RegisterFormEmployer() {
           <Separator className='my-6' />
 
           <div className='flex gap-3'>
-            <Button className='h-12 flex-1' type='button' variant='outline' onClick={() => setStep(1)}>
+            <Button className='h-12 flex-1' type='button' variant='outline' onClick={() => setStep(1)} disabled={submitting}>
               <ChevronLeft className='mr-1 size-4' />
               Back
             </Button>
-            <Button className='h-12 flex-1' type='submit'>Submit</Button>
+            <Button className='h-12 flex-1' type='submit' disabled={submitting}>
+              {submitting ? 'Saving…' : 'Submit'}
+            </Button>
           </div>
         </>
       )}

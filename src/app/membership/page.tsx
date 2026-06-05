@@ -1,7 +1,39 @@
+'use client';
+
+import { useState } from 'react';
+
+import { useRouter } from 'next/navigation';
+
+import { Check, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
-import { Check } from 'lucide-react';
+import { ApiError, apiFetch } from '@/lib/api/client';
+import type { MembershipCheckoutOut } from '@/lib/api/types';
 
 export default function MembershipPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const handleChooseMembership = async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch<MembershipCheckoutOut>('/memberships/checkout', {
+        method: 'POST',
+      });
+      // Redirect to Stripe-hosted checkout
+      window.location.href = data.url;
+    } catch (err) {
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : 'Failed to start checkout. Please log in first.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className='min-h-screen bg-background px-4 py-12 sm:px-6 lg:px-8'>
       <div className='mx-auto flex max-w-6xl flex-col gap-10 text-center'>
@@ -47,7 +79,10 @@ export default function MembershipPage() {
                 in the free tier.
               </div>
 
-              <Button className='w-full rounded-full bg-slate-950 text-white hover:bg-slate-800'>
+              <Button
+                className='w-full rounded-full bg-slate-950 text-white hover:bg-slate-800'
+                onClick={() => router.push('/')}
+              >
                 Start for free
               </Button>
 
@@ -95,8 +130,19 @@ export default function MembershipPage() {
                 with membership.
               </div>
 
-              <Button className='w-full rounded-full bg-white font-semibold text-[#0A65CC] hover:bg-blue-50'>
-                Choose membership
+              <Button
+                className='w-full rounded-full bg-white font-semibold text-[#0A65CC] hover:bg-blue-50'
+                onClick={handleChooseMembership}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className='mr-2 size-4 animate-spin' />
+                    Redirecting…
+                  </>
+                ) : (
+                  'Choose membership'
+                )}
               </Button>
 
               <div className='space-y-3 pt-6 text-sm text-blue-100'>

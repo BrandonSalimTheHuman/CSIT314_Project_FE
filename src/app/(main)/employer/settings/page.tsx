@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Building2, Globe, Pencil, Phone, X } from "lucide-react";
+import { Building2, Globe, Loader2, Mail, Pencil, Phone, X } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -14,20 +14,9 @@ import { CompanyPictureUpload, ProfilePictureUpload } from "@/components/ui/file
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-
-// ── mock data ─────────────────────────────────────────────────────────────────
-
-const MOCK_EMPLOYER = {
-  fullName: "Sarah Johnson",
-  email: "sarah.johnson@techcorp.com",
-  phoneNumber: "+1 (555) 234-5678",
-  companyName: "TechCorp Solutions",
-  companyInformation:
-    "TechCorp Solutions is a forward-thinking technology company specializing in enterprise software development and digital transformation. Founded in 2010, we have grown to over 500 employees across 12 offices worldwide. We are committed to building innovative products that help businesses scale efficiently.",
-  companyWebsite: "https://techcorp.com",
-  profilePicture: null as File | null,
-  companyPicture: null as File | null,
-};
+import { ApiError, apiFetch } from "@/lib/api/client";
+import type { EmployerOut } from "@/lib/api/types";
+import { useAuth } from "@/lib/auth/auth-context";
 
 // ── schema ────────────────────────────────────────────────────────────────────
 
@@ -43,52 +32,152 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+interface ProfileState {
+  fullName: string;
+  phoneNumber: string;
+  companyName: string;
+  companyInformation: string;
+  companyWebsite: string;
+  profilePictureUrl: string | null;
+  companyPictureUrl: string | null;
+}
+
+function employerToProfile(e: EmployerOut): ProfileState {
+  return {
+    fullName: e.full_name,
+    phoneNumber: e.phone_number ?? "",
+    companyName: e.company_name,
+    companyInformation: e.company_information ?? "",
+    companyWebsite: e.company_website ?? "",
+    profilePictureUrl: e.profile_picture,
+    companyPictureUrl: e.company_picture,
+  };
+}
+
+function profileToFormDefaults(p: ProfileState): FormData {
+  return {
+    fullName: p.fullName,
+    phoneNumber: p.phoneNumber,
+    companyName: p.companyName,
+    companyInformation: p.companyInformation,
+    companyWebsite: p.companyWebsite,
+    profilePicture: undefined,
+    companyPicture: undefined,
+  };
+}
+
 // ── component ─────────────────────────────────────────────────────────────────
 
 export default function EmployerSettingsPage() {
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState(MOCK_EMPLOYER);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [profile, setProfile] = useState<ProfileState | null>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      fullName: profile.fullName,
-      phoneNumber: profile.phoneNumber,
-      companyName: profile.companyName,
-      companyInformation: profile.companyInformation,
-      companyWebsite: profile.companyWebsite,
-      profilePicture: undefined,
-      companyPicture: undefined,
-    },
+    defaultValues: profileToFormDefaults({
+      fullName: "",
+      phoneNumber: "",
+      companyName: "",
+      companyInformation: "",
+      companyWebsite: "",
+      profilePictureUrl: null,
+      companyPictureUrl: null,
+    }),
   });
 
-  const onSubmit = (data: FormData) => {
-    setProfile((prev) => ({
-      ...prev,
-      fullName: data.fullName,
-      phoneNumber: data.phoneNumber,
-      companyName: data.companyName,
-      companyInformation: data.companyInformation,
-      companyWebsite: data.companyWebsite ?? prev.companyWebsite,
-      profilePicture: data.profilePicture ?? prev.profilePicture,
-      companyPicture: data.companyPicture ?? prev.companyPicture,
-    }));
-    setIsEditing(false);
-    toast.success("Profile updated successfully.");
+  // ── fetch profile on mount ──────────────────────────────────────────────────
+
+  async function fetchProfile() {
+    try {
+      const employer = await apiFetch<EmployerOut>("/employers/me");
+      const p = employerToProfile(employer);
+      setProfile(p);
+      form.reset(profileToFormDefaults(p));
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : "Failed to load profile.";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── submit handler ──────────────────────────────────────────────────────────
+
+  const onSubmit = async (data: FormData) => {
+    setIsSaving(true);
+    try {
+      // 1. Update employer profile
+      await apiFetch("/employers/me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          full_name: data.fullName,
+          company_name: data.companyName,
+          phone_number: data.phoneNumber,
+          company_information: data.companyInformation || null,
+          company_website: data.companyWebsite || null,
+        }),
+      });
+
+      // 2. Upload profile picture if provided
+      if (data.profilePicture instanceof File) {
+        const picForm = new FormData();
+        picForm.append("file", data.profilePicture);
+        await apiFetch("/employers/me/profile-picture", {
+          method: "POST",
+          body: picForm,
+        });
+      }
+
+      // 3. Upload company picture if provided
+      if (data.companyPicture instanceof File) {
+        const picForm = new FormData();
+        picForm.append("file", data.companyPicture);
+        await apiFetch("/employers/me/company-picture", {
+          method: "POST",
+          body: picForm,
+        });
+      }
+
+      // 4. Refetch profile to update view mode
+      setIsLoading(true);
+      await fetchProfile();
+      setIsEditing(false);
+      toast.success("Profile updated successfully.");
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : "Failed to save profile.";
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+      setIsLoading(false);
+    }
   };
 
   const handleCancel = () => {
-    form.reset({
-      fullName: profile.fullName,
-      phoneNumber: profile.phoneNumber,
-      companyName: profile.companyName,
-      companyInformation: profile.companyInformation,
-      companyWebsite: profile.companyWebsite,
-      profilePicture: undefined,
-      companyPicture: undefined,
-    });
+    if (profile) {
+      form.reset(profileToFormDefaults(profile));
+    }
     setIsEditing(false);
   };
+
+  // ── loading state ───────────────────────────────────────────────────────────
+
+  if (isLoading || !profile) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   // ── view mode ───────────────────────────────────────────────────────────────
 
@@ -106,10 +195,10 @@ export default function EmployerSettingsPage() {
             <div className="flex items-start justify-between">
               <div className="-mt-12">
                 <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-background bg-muted shadow">
-                  {profile.profilePicture ? (
-                    // biome-ignore lint/performance/noImgElement: blob URL from createObjectURL
+                  {profile.profilePictureUrl ? (
+                    // biome-ignore lint/performance/noImgElement: profile picture URL from backend
                     <img
-                      src={URL.createObjectURL(profile.profilePicture)}
+                      src={profile.profilePictureUrl}
                       alt={profile.fullName}
                       className="h-full w-full object-cover"
                     />
@@ -136,6 +225,12 @@ export default function EmployerSettingsPage() {
                 <Phone className="size-4 text-blue-500" />
                 {profile.phoneNumber}
               </span>
+              {user?.email && (
+                <span className="flex items-center gap-1.5">
+                  <Mail className="size-4 text-blue-500" />
+                  {user.email}
+                </span>
+              )}
               {profile.companyWebsite && (
                 <a
                   href={profile.companyWebsite}
@@ -158,10 +253,10 @@ export default function EmployerSettingsPage() {
         </div>
 
         {/* Company picture */}
-        {profile.companyPicture && (
+        {profile.companyPictureUrl && (
           <div className="mt-6 overflow-hidden rounded-3xl border border-border shadow-sm">
-            {/* biome-ignore lint/performance/noImgElement: blob URL from createObjectURL */}
-            <img src={URL.createObjectURL(profile.companyPicture)} alt="Company" className="h-56 w-full object-cover" />
+            {/* biome-ignore lint/performance/noImgElement: company picture URL from backend */}
+            <img src={profile.companyPictureUrl} alt="Company" className="h-56 w-full object-cover" />
           </div>
         )}
       </div>
@@ -177,7 +272,7 @@ export default function EmployerSettingsPage() {
           <h1 className="font-bold text-2xl">Edit Profile</h1>
           <p className="text-muted-foreground text-sm">Update your employer information</p>
         </div>
-        <Button variant="ghost" size="icon" onClick={handleCancel}>
+        <Button variant="ghost" size="icon" onClick={handleCancel} disabled={isSaving}>
           <X className="size-5" />
         </Button>
       </div>
@@ -295,7 +390,7 @@ export default function EmployerSettingsPage() {
                   <Textarea
                     {...field}
                     id="settings-company-info"
-                    placeholder="Describe your company…"
+                    placeholder="Describe your company..."
                     rows={5}
                     aria-invalid={fieldState.invalid}
                   />
@@ -321,11 +416,18 @@ export default function EmployerSettingsPage() {
         <Separator />
 
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={handleCancel}>
+          <Button type="button" variant="outline" onClick={handleCancel} disabled={isSaving}>
             Cancel
           </Button>
-          <Button type="submit" className="px-8">
-            Save Changes
+          <Button type="submit" className="px-8" disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
           </Button>
         </div>
       </form>

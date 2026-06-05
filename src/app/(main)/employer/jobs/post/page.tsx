@@ -1,10 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Bold, Italic, Strikethrough, Underline, List } from 'lucide-react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import { toast } from 'sonner';
 
+import { ApiError, apiFetch } from '@/lib/api/client';
+import type { JobPostingCreate } from '@/lib/api/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -101,7 +105,30 @@ const editorMenu = [
   },
 ];
 
+/** Map the form's jobType display string to the backend WorkingMode enum when possible. */
+function mapWorkMode(jobType: string): string {
+  const map: Record<string, string> = {
+    'Remote': 'remote',
+    'Full time': 'onsite',
+    'Part time': 'onsite',
+    'Internship': 'onsite',
+    'Temporary': 'onsite',
+    'Contract based': 'onsite',
+  };
+  return map[jobType] ?? jobType;
+}
+
+/** Parse the experience option string into a number (years). */
+function parseExperience(exp: string): number | undefined {
+  if (exp === 'All' || exp === 'Freshers') return 0;
+  const match = exp.match(/^(\d+)/);
+  return match ? Number(match[1]) : undefined;
+}
+
 export default function EmployerJobPostPage() {
+  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
+
   const [jobTitle, setJobTitle] = useState('');
   const [jobLocation, setJobLocation] = useState('');
   const [education, setEducation] = useState('All');
@@ -117,7 +144,45 @@ export default function EmployerJobPostPage() {
     immediatelyRender: false,
   });
 
-  const editorIsMounted = useMemo(() => Boolean(editor), [editor]);
+  const editorIsMounted = Boolean(editor);
+
+  const handlePostJob = async () => {
+    if (!jobTitle.trim()) {
+      toast.error('Please enter a job title.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const body: JobPostingCreate = {
+        title: jobTitle,
+        company_info: editor?.getText() ?? '',
+        location: jobLocation || undefined,
+        work_mode: mapWorkMode(jobType) as JobPostingCreate['work_mode'],
+        salary_range: salary,
+        required_education: education === 'All' ? undefined : education,
+        required_experience: parseExperience(experience),
+        status: 'published',
+        required_skills: [],
+      };
+
+      await apiFetch('/job-postings', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+
+      toast.success('Job posted successfully!');
+      router.push('/employer/jobs');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        toast.error(err.message);
+      } else {
+        toast.error('Failed to post job. Please try again.');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className='min-h-screen bg-slate-50 text-slate-900'>
@@ -305,8 +370,10 @@ export default function EmployerJobPostPage() {
               type='button'
               variant='default'
               className='w-full bg-sky-700 py-6 text-lg font-semibold'
+              disabled={submitting}
+              onClick={handlePostJob}
             >
-              Post Job
+              {submitting ? 'Posting...' : 'Post Job'}
             </Button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { Briefcase, LogOut, Search, Settings, UserCircle2 } from "lucide-react";
 
@@ -13,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/lib/auth/auth-context";
 
 interface TopNavProps {
   role: "employer" | "candidate";
@@ -21,6 +23,13 @@ interface TopNavProps {
 export function TopNav({ role }: TopNavProps) {
   const homePath = `/${role}/jobs`;
   const settingsPath = `/${role}/settings`;
+  const router = useRouter();
+  const { signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    router.replace("/auth/login");
+  };
 
   return (
     <div className="top-0 z-20 border-border border-b bg-background/95 px-2 backdrop-blur-sm">
@@ -63,14 +72,12 @@ export function TopNav({ role }: TopNavProps) {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link
-                  href="/auth/login"
-                  className="flex items-center text-destructive focus:text-destructive"
-                >
-                  <LogOut className="mr-2 size-4" />
-                  Log Out
-                </Link>
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="flex items-center text-destructive focus:text-destructive"
+              >
+                <LogOut className="mr-2 size-4" />
+                Log Out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

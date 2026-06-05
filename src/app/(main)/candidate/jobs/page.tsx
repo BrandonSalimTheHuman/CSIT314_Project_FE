@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { ArrowLeft, ArrowRight, Crown, MapPin, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Briefcase, Crown, Loader2, MapPin, Search } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,230 +19,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { apiFetch } from "@/lib/api/client";
+import type { JobPostingOut, Page } from "@/lib/api/types";
 
 const FREE_LIMIT = 10;
 
 const sortOptions = ["Latest", "Oldest"];
 const perPageOptions = ["10 per page", "12 per page", "24 per page"];
-
-const jobPostings = [
-  {
-    id: 1,
-    company: "Reddit",
-    logo: "https://cdn.simpleicons.org/reddit/FF4500",
-    location: "United Kingdom of Great Britain",
-    position: "Marketing Officer",
-    jobType: "Full time",
-    salary: "$30K-$35K",
-  },
-  {
-    id: 2,
-    company: "Figma",
-    logo: "https://cdn.simpleicons.org/figma/000000",
-    location: "Canada",
-    position: "UI/UX Designer",
-    jobType: "Full time",
-    salary: "$50K-$70K",
-  },
-  {
-    id: 3,
-    company: "Microsoft",
-    logo: "https://cdn.simpleicons.org/microsoft/5F6BED",
-    location: "Australia",
-    position: "Product Designer",
-    jobType: "Full time",
-    salary: "$40K-$50K",
-  },
-  {
-    id: 4,
-    company: "Instagram",
-    logo: "https://cdn.simpleicons.org/instagram/E4405F",
-    location: "Australia",
-    position: "Front End Developer",
-    jobType: "Contract based",
-    salary: "$50K-$80K",
-  },
-  {
-    id: 5,
-    company: "Dribbble",
-    logo: "https://cdn.simpleicons.org/dribbble/EA4C89",
-    location: "California",
-    position: "Senior UX Designer",
-    jobType: "Full time",
-    salary: "$50K-$80K",
-  },
-  {
-    id: 6,
-    company: "Upwork",
-    logo: "https://cdn.simpleicons.org/upwork/6FDA44",
-    location: "France",
-    position: "Technical Support Specialist",
-    jobType: "Full time",
-    salary: "$35K-$40K",
-  },
-  {
-    id: 7,
-    company: "Freepik",
-    logo: "https://cdn.simpleicons.org/freepik/00B5E2",
-    location: "China",
-    position: "Visual Designer",
-    jobType: "Full time",
-    salary: "$10K-$15K",
-  },
-  {
-    id: 8,
-    company: "Twitter",
-    logo: "https://cdn.simpleicons.org/x/000000",
-    location: "Canada",
-    position: "Senior UX Designer",
-    jobType: "Internship",
-    salary: "$50K-$60K",
-  },
-  {
-    id: 9,
-    company: "Slack",
-    logo: "https://cdn.simpleicons.org/slack/611F69",
-    location: "Germany",
-    position: "Networking Engineer",
-    jobType: "Remote",
-    salary: "$50K-$90K",
-  },
-  {
-    id: 10,
-    company: "Facebook",
-    logo: "https://cdn.simpleicons.org/facebook/1877F2",
-    location: "United Kingdom of Great Britain",
-    position: "Software Engineer",
-    jobType: "Part time",
-    salary: "$15K-$20K",
-  },
-  {
-    id: 11,
-    company: "Youtube",
-    logo: "https://cdn.simpleicons.org/youtube/FF0000",
-    location: "Germany",
-    position: "Interaction Designer",
-    jobType: "Full time",
-    salary: "$20K-$25K",
-  },
-  {
-    id: 12,
-    company: "Spotify",
-    logo: "https://cdn.simpleicons.org/spotify/1DB954",
-    location: "Sweden",
-    position: "Product Manager",
-    jobType: "Remote",
-    salary: "$60K-$90K",
-  },
-  {
-    id: 13,
-    company: "LinkedIn",
-    logo: "https://cdn.simpleicons.org/linkedin/0A66C2",
-    location: "United States",
-    position: "Data Analyst",
-    jobType: "Full time",
-    salary: "$55K-$75K",
-  },
-  {
-    id: 14,
-    company: "Adobe",
-    logo: "https://cdn.simpleicons.org/adobe/FF0000",
-    location: "California",
-    position: "Creative Director",
-    jobType: "Full time",
-    salary: "$80K-$100K",
-  },
-  {
-    id: 15,
-    company: "Airbnb",
-    logo: "https://cdn.simpleicons.org/airbnb/FF5A5F",
-    location: "San Francisco",
-    position: "Backend Engineer",
-    jobType: "Full time",
-    salary: "$90K-$120K",
-  },
-  {
-    id: 16,
-    company: "Netflix",
-    logo: "https://cdn.simpleicons.org/netflix/E50914",
-    location: "Los Angeles",
-    position: "iOS Developer",
-    jobType: "Full time",
-    salary: "$100K-$130K",
-  },
-  {
-    id: 17,
-    company: "Stripe",
-    logo: "https://cdn.simpleicons.org/stripe/635BFF",
-    location: "Remote",
-    position: "Backend Engineer",
-    jobType: "Remote",
-    salary: "$100K-$140K",
-  },
-  {
-    id: 18,
-    company: "Vercel",
-    logo: "https://cdn.simpleicons.org/vercel/000000",
-    location: "Remote",
-    position: "Frontend Engineer",
-    jobType: "Remote",
-    salary: "$80K-$110K",
-  },
-  {
-    id: 19,
-    company: "Notion",
-    logo: "https://cdn.simpleicons.org/notion/000000",
-    location: "New York",
-    position: "Product Manager",
-    jobType: "Full time",
-    salary: "$85K-$110K",
-  },
-  {
-    id: 20,
-    company: "Dropbox",
-    logo: "https://cdn.simpleicons.org/dropbox/0061FF",
-    location: "San Francisco",
-    position: "DevOps Engineer",
-    jobType: "Full time",
-    salary: "$95K-$125K",
-  },
-  {
-    id: 21,
-    company: "Shopify",
-    logo: "https://cdn.simpleicons.org/shopify/96BF48",
-    location: "Canada",
-    position: "Full Stack Developer",
-    jobType: "Remote",
-    salary: "$85K-$115K",
-  },
-  {
-    id: 22,
-    company: "Twitch",
-    logo: "https://cdn.simpleicons.org/twitch/9146FF",
-    location: "San Francisco",
-    position: "Mobile Developer",
-    jobType: "Full time",
-    salary: "$80K-$100K",
-  },
-  {
-    id: 23,
-    company: "Discord",
-    logo: "https://cdn.simpleicons.org/discord/5865F2",
-    location: "Remote",
-    position: "Software Engineer",
-    jobType: "Remote",
-    salary: "$90K-$120K",
-  },
-  {
-    id: 24,
-    company: "Zoom",
-    logo: "https://cdn.simpleicons.org/zoom/0B5CFF",
-    location: "San Jose",
-    position: "QA Engineer",
-    jobType: "Full time",
-    salary: "$70K-$90K",
-  },
-];
 
 const getVisiblePages = (page: number, pageCount: number) => {
   const half = Math.floor(5 / 2);
@@ -256,30 +40,30 @@ const getVisiblePages = (page: number, pageCount: number) => {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 };
 
-const JobCard = ({ job }: { job: (typeof jobPostings)[number] }) => (
+const JobCard = ({ job }: { job: JobPostingOut }) => (
   <Link
-    href={`/candidate/jobs/${job.id}`}
+    href={`/candidate/jobs/${job.job_id}`}
     className="block rounded-2xl border border-border bg-white p-6 shadow-sm transition hover:border-sky-600 hover:shadow-md"
   >
     <div className="flex items-center gap-4">
-      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
-        <img src={job.logo} alt={job.company} className="h-full w-full object-cover" />
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted">
+        <Briefcase className="size-6 text-muted-foreground" />
       </div>
       <div className="flex flex-col gap-1">
-        <div className="font-medium text-foreground text-lg">{job.company}</div>
+        <div className="font-medium text-foreground text-lg">{job.title}</div>
         <div className="flex items-center gap-1.5 text-slate-500 text-sm">
           <MapPin className="size-4" />
-          {job.location}
+          {job.location ?? "Remote"}
         </div>
       </div>
     </div>
 
     <div className="mt-6">
-      <h3 className="font-semibold text-foreground text-xl tracking-tight">{job.position}</h3>
+      <h3 className="font-semibold text-foreground text-xl tracking-tight">{job.title}</h3>
       <div className="mt-2 flex items-center gap-2 font-medium text-slate-500 text-sm">
-        <span>{job.jobType}</span>
+        <span>{job.work_mode ?? "N/A"}</span>
         <span>•</span>
-        <span>{job.salary}</span>
+        <span>{job.salary_range ?? "Not specified"}</span>
       </div>
     </div>
   </Link>
@@ -292,6 +76,37 @@ export default function CandidateJobsPage() {
   const [perPage, setPerPage] = useState("10 per page");
   const [page, setPage] = useState(1);
   const [paywallOpen, setPaywallOpen] = useState(false);
+
+  const [jobs, setJobs] = useState<JobPostingOut[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalJobs, setTotalJobs] = useState(0);
+  const [backendPageCount, setBackendPageCount] = useState(1);
+
+  const pageSize = Number(perPage.split(" ")[0]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+
+    apiFetch<Page<JobPostingOut>>(`/job-postings?page=${page}&size=${pageSize}`)
+      .then((data) => {
+        if (cancelled) return;
+        setJobs(data.items);
+        setTotalJobs(data.total);
+        setBackendPageCount(data.pages);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        toast.error(err instanceof Error ? err.message : "Failed to load jobs");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page, pageSize]);
 
   const requiresMembership = (nextPage: number, nextPerPage: string) => {
     const size = Number(nextPerPage.split(" ")[0]);
@@ -315,26 +130,22 @@ export default function CandidateJobsPage() {
     setPage(1);
   };
 
-  const filteredJobs = useMemo(() => {
+  // Client-side filter on fetched results
+  const filteredJobs = (() => {
     const query = search.trim().toLowerCase();
-    return jobPostings.filter((job) => {
-      if (!query) return true;
-      return [job.company, job.position, job.location, job.jobType].join(" ").toLowerCase().includes(query);
-    });
-  }, [search]);
+    if (!query) return jobs;
+    return jobs.filter((job) =>
+      [job.title, job.location, job.work_mode, job.salary_range].filter(Boolean).join(" ").toLowerCase().includes(query),
+    );
+  })();
 
-  const sortedJobs = useMemo(() => {
-    return [...filteredJobs].sort((a, b) => {
-      if (sort === "Oldest") return a.company.localeCompare(b.company);
-      return b.company.localeCompare(a.company);
-    });
-  }, [filteredJobs, sort]);
+  const sortedJobs = [...filteredJobs].sort((a, b) => {
+    if (sort === "Oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
 
-  const pageSize = Number(perPage.split(" ")[0]);
-  const pageCount = Math.max(1, Math.ceil(sortedJobs.length / pageSize));
-  const currentPage = Math.min(page, pageCount);
-  const currentJobs = sortedJobs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const visiblePages = getVisiblePages(currentPage, pageCount);
+  const pageCount = backendPageCount;
+  const visiblePages = getVisiblePages(page, pageCount);
 
   return (
     <div className="min-h-screen bg-white text-foreground">
@@ -369,7 +180,7 @@ export default function CandidateJobsPage() {
       <main className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-muted-foreground text-sm">
-            {filteredJobs.length} jobs found
+            {totalJobs} jobs found
           </div>
 
           <div className="grid grid-cols-2 items-center gap-3">
@@ -400,11 +211,17 @@ export default function CandidateJobsPage() {
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {currentJobs.map((job) => (
-            <JobCard key={job.id} job={job} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="size-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-3">
+            {sortedJobs.map((job) => (
+              <JobCard key={job.job_id} job={job} />
+            ))}
+          </div>
+        )}
 
         <div className="mt-12 flex items-center justify-center gap-4">
           <Button
