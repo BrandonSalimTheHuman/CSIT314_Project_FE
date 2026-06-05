@@ -238,7 +238,7 @@ function EditJobForm({
   const [jobTitle, setJobTitle] = useState(job.title);
   const [jobLocation, setJobLocation] = useState(job.location ?? "");
   const [editEducation, setEditEducation] = useState(job.required_education ?? "");
-  const [workMode, setWorkMode] = useState(job.work_mode ?? "onsite");
+  const [workMode, setWorkMode] = useState<string>(job.work_mode ?? "onsite");
   const [salary, setSalary] = useState(job.salary_range ?? "$50 - $1000");
   const [saving, setSaving] = useState(false);
 
