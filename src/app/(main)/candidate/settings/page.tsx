@@ -437,12 +437,6 @@ export default function CandidateSettingsPage() {
             </div>
 
             <div className="mt-4 flex flex-wrap gap-4 text-muted-foreground text-sm">
-              {profile.preferredLocation && (
-                <span className="flex items-center gap-1.5">
-                  <MapPin className="size-4 text-blue-500" />
-                  {profile.preferredLocation}
-                </span>
-              )}
               <span className="flex items-center gap-1.5">
                 <Phone className="size-4 text-blue-500" />
                 {profile.phoneNumber}
@@ -765,6 +759,25 @@ export default function CandidateSettingsPage() {
             />
             <Controller
               control={form.control}
+              name="preferredLocation"
+              render={({ field, fieldState }) => (
+                <Field className="gap-1.5" data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="edit-preferred-location">
+                    Preferred Location <span className="font-normal text-muted-foreground">(optional)</span>
+                  </FieldLabel>
+                  <Input
+                    {...field}
+                    id="edit-preferred-location"
+                    placeholder="e.g. Singapore"
+                    className="py-6"
+                    aria-invalid={fieldState.invalid}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <Controller
+              control={form.control}
               name="website"
               render={({ field, fieldState }) => (
                 <Field className="gap-1.5 sm:col-span-2" data-invalid={fieldState.invalid}>
@@ -849,25 +862,6 @@ export default function CandidateSettingsPage() {
                       <SelectItem value="hybrid">Hybrid</SelectItem>
                     </SelectContent>
                   </Select>
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-            <Controller
-              control={form.control}
-              name="preferredLocation"
-              render={({ field, fieldState }) => (
-                <Field className="gap-1.5" data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="edit-preferred-location">
-                    Preferred Location <span className="font-normal text-muted-foreground">(optional)</span>
-                  </FieldLabel>
-                  <Input
-                    {...field}
-                    id="edit-preferred-location"
-                    placeholder="e.g. New York, NY"
-                    className="py-6"
-                    aria-invalid={fieldState.invalid}
-                  />
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
