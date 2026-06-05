@@ -193,10 +193,17 @@ function CandidateCard({ candidate, onViewProfile }: { candidate: CandidateOut; 
           <div className="text-muted-foreground text-sm">{formatLabel(candidate.candidate_level, CANDIDATE_LEVEL_LABELS)}</div>
 
           <div className="mt-3 flex flex-wrap gap-3 text-muted-foreground text-sm">
-            <div className="inline-flex items-center gap-1.5">
-              <MapPin className="size-4" />
-              <span>{candidate.preferred_location ?? "N/A"}</span>
-            </div>
+            {candidate.preferred_working_mode && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 font-medium text-blue-700 text-xs capitalize">
+                {candidate.preferred_working_mode}
+              </span>
+            )}
+            {candidate.preferred_location && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-600 text-xs">
+                <MapPin className="size-3" />
+                {candidate.preferred_location}
+              </span>
+            )}
             <div className="inline-flex items-center gap-1.5">
               <BriefcaseBusiness className="size-4" />
               <span>{formatLabel(candidate.years_of_experience, EXPERIENCE_LABELS)} experience</span>
