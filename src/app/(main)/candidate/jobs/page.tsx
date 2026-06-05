@@ -31,7 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiFetch } from "@/lib/api/client";
-import type { JobPostingOut, Page } from "@/lib/api/types";
+import type { JobPostingOut, MembershipOut, Page } from "@/lib/api/types";
 
 const PAGE_SIZE = 10;
 
@@ -125,11 +125,20 @@ export default function CandidateJobsPage() {
   const [page, setPage] = useState(1);
   const [paywallOpen, setPaywallOpen] = useState(false);
 
+  // Membership
+  const [isMember, setIsMember] = useState(false);
+
   // Data
   const [jobs, setJobs] = useState<JobPostingOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalJobs, setTotalJobs] = useState(0);
   const [pageCount, setPageCount] = useState(1);
+
+  useEffect(() => {
+    apiFetch<MembershipOut>("/memberships/me")
+      .then((data) => setIsMember(data.is_active))
+      .catch(() => setIsMember(false));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -183,7 +192,7 @@ export default function CandidateJobsPage() {
   };
 
   const handlePageChange = (nextPage: number) => {
-    if (nextPage > 1) {
+    if (!isMember && nextPage > 1) {
       setPaywallOpen(true);
       return;
     }
