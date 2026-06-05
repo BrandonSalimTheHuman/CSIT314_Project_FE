@@ -396,50 +396,74 @@ function ApplicantCard({
 }) {
   const c = application.candidate;
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex flex-1 items-center gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-          <span className="font-semibold text-sm text-slate-700 uppercase">
+    <div className="group flex flex-col gap-4 rounded-3xl border border-border bg-background p-4 transition-all hover:border-sky-700 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-1 items-center gap-4">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-muted text-muted-foreground">
+          <span className="font-semibold text-base text-slate-700 uppercase">
             {(c?.full_name ?? "?")
               .split(" ")
               .map((n) => n[0])
               .join("")}
           </span>
         </div>
-        <div>
-          <div className="font-semibold text-sm">{c?.full_name ?? "Unknown"}</div>
-          <div className="text-muted-foreground text-xs">
-            Applied {new Date(application.applied_at).toLocaleDateString()}
+
+        <div className="min-w-0">
+          <div className="font-semibold text-base">{c?.full_name ?? "Unknown"}</div>
+          <div className="text-muted-foreground text-sm">{formatLabel(c?.candidate_level, CANDIDATE_LEVEL_LABELS)}</div>
+
+          <div className="mt-3 flex flex-wrap gap-3 text-muted-foreground text-sm">
+            <div className="inline-flex items-center gap-1.5">
+              <MapPin className="size-4" />
+              <span>{c?.preferred_location ?? "N/A"}</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5">
+              <BriefcaseBusiness className="size-4" />
+              <span>{formatLabel(c?.years_of_experience, EXPERIENCE_LABELS)} experience</span>
+            </div>
+            <span
+              className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                application.status === "reviewed"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-amber-100 text-amber-700"
+              }`}
+            >
+              {application.status}
+            </span>
           </div>
+
+          {c && c.skills.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {c.skills.slice(0, 5).map((s) => (
+                <span key={s.skill_id} className="inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-sky-700 text-xs">
+                  {s.skill_name}
+                </span>
+              ))}
+              {c.skills.length > 5 && (
+                <span className="text-muted-foreground text-xs">+{c.skills.length - 5} more</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
       <div className="flex items-center gap-2">
-        <span
-          className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
-            application.status === "reviewed"
-              ? "bg-green-100 text-green-700"
-              : "bg-amber-100 text-amber-700"
-          }`}
-        >
-          {application.status}
-        </span>
         <Button
           variant="outline"
           size="sm"
-          className="h-8 gap-1 bg-sky-100 px-4 text-xs font-semibold text-sky-600 hover:bg-sky-700 hover:text-white"
           onClick={onViewProfile}
+          className="h-10 gap-2 bg-sky-100 px-6 font-semibold text-sky-600 transition-all hover:bg-sky-700 hover:text-white group-hover:bg-sky-700 group-hover:text-white"
         >
           View Profile
-          <ArrowRight className="size-3" />
+          <ArrowRight className="size-4" />
         </Button>
         {application.status === "pending" && (
           <Button
             variant="outline"
             size="sm"
-            className="h-8 gap-1 text-xs"
+            className="h-10 gap-1 px-4 text-sm"
             onClick={() => onMarkReviewed(application.application_id)}
           >
-            <Check className="size-3" />
+            <Check className="size-4" />
             Mark Reviewed
           </Button>
         )}
