@@ -98,23 +98,28 @@ function workModeLabel(wm: string | null | undefined): string {
 }
 
 /** Convert a CandidateOut to the CandidateProfile shape the modal expects */
-function toCandidateProfile(c: CandidateOut): CandidateProfile {
+function toCandidateProfile(c: CandidateOut, coverLetter = ""): CandidateProfile {
   return {
     name: c.full_name,
-    title: c.candidate_level ?? "Candidate",
-    experience: c.years_of_experience ?? "N/A",
-    avatar: c.profile_picture ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.full_name}`,
+    title: c.candidate_level ?? "",
+    experience: c.years_of_experience ?? "",
+    avatar: c.profile_picture,
     biography: c.biography ?? "",
-    coverLetter: "",
+    coverLetter,
     dateOfBirth: c.date_of_birth ?? "",
     nationality: c.nationality ?? "",
     maritalStatus: c.marital_status ?? "",
     gender: c.gender ?? "",
     education: c.education_level ?? "",
+    fieldOfStudy: c.field_of_study ?? "",
+    preferredWorkingMode: c.preferred_working_mode ?? "",
     website: c.website ?? "",
     location: c.preferred_location ?? "",
     phone: c.phone_number ?? "",
     email: "",
+    skills: c.skills,
+    workExperiences: c.work_experiences,
+    resumeUrl: c.resume_url,
   };
 }
 
@@ -388,9 +393,11 @@ function EditJobForm({
 function ApplicantCard({
   application,
   onMarkReviewed,
+  onViewProfile,
 }: {
   application: ApplicationOut;
   onMarkReviewed: (appId: number) => void;
+  onViewProfile: () => void;
 }) {
   const c = application.candidate;
   return (
@@ -421,6 +428,15 @@ function ApplicantCard({
         >
           {application.status}
         </span>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1 bg-sky-100 px-4 text-xs font-semibold text-sky-600 hover:bg-sky-700 hover:text-white"
+          onClick={onViewProfile}
+        >
+          View Profile
+          <ArrowRight className="size-3" />
+        </Button>
         {application.status === "pending" && (
           <Button
             variant="outline"
@@ -771,6 +787,11 @@ export default function EmployerJobDetailPage({ params }: { params: Promise<{ id
                     key={app.application_id}
                     application={app}
                     onMarkReviewed={handleMarkReviewed}
+                    onViewProfile={() => {
+                      if (app.candidate) {
+                        setSelectedCandidate(toCandidateProfile(app.candidate, app.cover_letter ?? ""));
+                      }
+                    }}
                   />
                 ))}
               </div>
