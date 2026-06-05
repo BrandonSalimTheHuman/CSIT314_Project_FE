@@ -10,6 +10,7 @@ import {
   Globe,
   GraduationCap,
   Heart,
+  Laptop,
   Loader2,
   Mail,
   MapPin,
@@ -55,10 +56,10 @@ const schema = z.object({
   nationality: z.string().optional(),
   maritalStatus: z.string().optional(),
   website: z.string().optional(),
-  preferredLocation: z.string().optional(),
-  preferredWorkingMode: z.string().optional(),
   yearsOfExperience: z.string().min(1, "Please select your experience range."),
   candidateLevel: z.string().min(1, "Please select your level."),
+  preferredWorkingMode: z.string().optional(),
+  preferredLocation: z.string().optional(),
   biography: z.string().optional(),
   skills: z.array(z.string()).min(1, "Please add at least one skill."),
   educationLevel: z.string().min(1, "Please select your education level."),
@@ -134,10 +135,10 @@ function profileToFormDefaults(p: ProfileState): FormData {
     nationality: p.nationality,
     maritalStatus: p.maritalStatus,
     website: p.website,
-    preferredLocation: p.preferredLocation,
-    preferredWorkingMode: p.preferredWorkingMode,
     yearsOfExperience: p.yearsOfExperience,
     candidateLevel: p.candidateLevel,
+    preferredWorkingMode: p.preferredWorkingMode,
+    preferredLocation: p.preferredLocation,
     biography: p.biography,
     skills: p.skills,
     educationLevel: p.educationLevel,
@@ -277,10 +278,10 @@ export default function CandidateSettingsPage() {
           nationality: data.nationality || null,
           marital_status: data.maritalStatus || null,
           website: data.website || null,
-          preferred_location: data.preferredLocation || null,
-          preferred_working_mode: data.preferredWorkingMode || null,
           years_of_experience: data.yearsOfExperience,
           candidate_level: data.candidateLevel,
+          preferred_working_mode: data.preferredWorkingMode || null,
+          preferred_location: data.preferredLocation || null,
           biography: data.biography || null,
           education_level: data.educationLevel,
           field_of_study: data.fieldOfStudy || null,
@@ -577,14 +578,14 @@ export default function CandidateSettingsPage() {
                     value: MARITAL_LABELS[profile.maritalStatus] ?? profile.maritalStatus ?? "—",
                   },
                   {
+                    icon: <Laptop className="size-5 text-blue-500" />,
+                    label: "Preferred Working Mode",
+                    value: (WORK_MODE_LABELS[profile.preferredWorkingMode] ?? profile.preferredWorkingMode) || "—",
+                  },
+                  {
                     icon: <MapPin className="size-5 text-blue-500" />,
                     label: "Preferred Location",
                     value: profile.preferredLocation || "—",
-                  },
-                  {
-                    icon: <Briefcase className="size-5 text-blue-500" />,
-                    label: "Preferred Work Mode",
-                    value: WORK_MODE_LABELS[profile.preferredWorkingMode] ?? profile.preferredWorkingMode ?? "—",
                   },
                 ].map(({ icon, label, value }) => (
                   <div key={label} className="flex items-start gap-3">
@@ -770,47 +771,6 @@ export default function CandidateSettingsPage() {
                 </Field>
               )}
             />
-            <Controller
-              control={form.control}
-              name="preferredLocation"
-              render={({ field, fieldState }) => (
-                <Field className="gap-1.5" data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="edit-preferred-location">
-                    Preferred Location <span className="font-normal text-muted-foreground">(optional)</span>
-                  </FieldLabel>
-                  <Input
-                    {...field}
-                    id="edit-preferred-location"
-                    placeholder="e.g. Singapore, Remote"
-                    className="py-6"
-                    aria-invalid={fieldState.invalid}
-                  />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-            <Controller
-              control={form.control}
-              name="preferredWorkingMode"
-              render={({ field, fieldState }) => (
-                <Field className="gap-1.5" data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="edit-preferred-work-mode">
-                    Preferred Work Mode <span className="font-normal text-muted-foreground">(optional)</span>
-                  </FieldLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger id="edit-preferred-work-mode" className="py-6">
-                      <SelectValue placeholder="Select work mode" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="remote">Remote</SelectItem>
-                      <SelectItem value="onsite">On-site</SelectItem>
-                      <SelectItem value="hybrid">Hybrid</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
           </div>
         </div>
 
@@ -856,6 +816,47 @@ export default function CandidateSettingsPage() {
                       <SelectItem value="expert">Expert Level</SelectItem>
                     </SelectContent>
                   </Select>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <Controller
+              control={form.control}
+              name="preferredWorkingMode"
+              render={({ field, fieldState }) => (
+                <Field className="gap-1.5" data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="edit-work-mode">
+                    Preferred Working Mode <span className="font-normal text-muted-foreground">(optional)</span>
+                  </FieldLabel>
+                  <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                    <SelectTrigger id="edit-work-mode" className="py-6">
+                      <SelectValue placeholder="Select work mode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="remote">Remote</SelectItem>
+                      <SelectItem value="onsite">On-site</SelectItem>
+                      <SelectItem value="hybrid">Hybrid</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <Controller
+              control={form.control}
+              name="preferredLocation"
+              render={({ field, fieldState }) => (
+                <Field className="gap-1.5" data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="edit-preferred-location">
+                    Preferred Location <span className="font-normal text-muted-foreground">(optional)</span>
+                  </FieldLabel>
+                  <Input
+                    {...field}
+                    id="edit-preferred-location"
+                    placeholder="e.g. New York, NY"
+                    className="py-6"
+                    aria-invalid={fieldState.invalid}
+                  />
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}

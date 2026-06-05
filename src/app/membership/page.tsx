@@ -119,7 +119,7 @@ export default function MembershipPage() {
 
               <div className='flex items-end gap-2'>
                 <p className='text-5xl font-semibold tracking-tight text-white'>
-                  $9
+                  $10
                 </p>
                 <span className='pb-1 text-sm text-blue-200'>/month</span>
               </div>

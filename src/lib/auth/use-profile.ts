@@ -14,7 +14,7 @@ interface ProfileInfo {
 }
 
 export function useProfile(): ProfileInfo {
-  const { user, role } = useAuth();
+  const { user, role, session } = useAuth();
   const [profile, setProfile] = useState<ProfileInfo>({
     name: null,
     email: null,
@@ -22,7 +22,10 @@ export function useProfile(): ProfileInfo {
   });
 
   useEffect(() => {
-    if (!role) return;
+    if (!role || !session?.access_token) {
+      setProfile({ name: null, email: null, profilePicture: null });
+      return;
+    }
     const endpoint = role === "candidate" ? "/candidates/me" : "/employers/me";
     apiFetch<CandidateOut | EmployerOut>(endpoint)
       .then((data) => {
@@ -32,8 +35,10 @@ export function useProfile(): ProfileInfo {
           profilePicture: data.profile_picture,
         });
       })
-      .catch(() => {});
-  }, [role, user?.email]);
+      .catch(() => {
+        setProfile({ name: null, email: user?.email ?? null, profilePicture: null });
+      });
+  }, [role, session?.access_token, user?.email]);
 
   return profile;
 }

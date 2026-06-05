@@ -121,16 +121,16 @@ export function LoginForm() {
           name="remember"
           render={({ field, fieldState }) => (
             <Field orientation="horizontal" data-invalid={fieldState.invalid}>
-              <Checkbox
+              {/* <Checkbox
                 id="login-remember"
                 name={field.name}
                 checked={field.value}
                 onCheckedChange={(checked) => field.onChange(Boolean(checked))}
                 aria-invalid={fieldState.invalid}
-              />
+              /> */}
 
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              
+
               {/* <FieldContent>
                 <FieldLabel htmlFor="login-remember" className="font-normal">
                   Remember me for 30 days
