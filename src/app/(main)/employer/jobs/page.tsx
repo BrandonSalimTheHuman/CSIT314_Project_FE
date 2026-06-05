@@ -86,7 +86,7 @@ export default function EmployerJobPostManagementPage() {
         }
 
         const data = await apiFetch<Page<JobPostingOut>>(
-          `/job-postings?${params.toString()}`,
+          `/employers/me/job-postings?${params.toString()}`,
         );
         if (cancelled) return;
         setJobs(data.items);
@@ -150,13 +150,6 @@ export default function EmployerJobPostManagementPage() {
                 Find Job
               </Button>
             </div>
-
-            <Button
-              variant="outline"
-              className="gap-2 border-sky-600 bg-[#f1f2f4] px-12 font-semibold text-[#0066cc] text-base hover:bg-slate-100"
-            >
-              Filter
-            </Button>
           </div>
         </div>
       </div>
