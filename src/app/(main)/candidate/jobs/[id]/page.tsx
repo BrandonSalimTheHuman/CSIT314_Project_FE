@@ -11,6 +11,7 @@ import {
   Briefcase,
   BriefcaseBusiness,
   CalendarDays,
+  CheckCircle2,
   Clock3,
   DollarSign,
   FileText,
@@ -37,7 +38,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { apiFetch } from "@/lib/api/client";
-import type { ApplicationCreate, ApplicationOut, CandidateOut, JobPostingOut } from "@/lib/api/types";
+import type { ApplicationCreate, ApplicationOut, CandidateOut, JobPostingOut, ApplicationStatus } from "@/lib/api/types";
 
 const EDITOR_MENU = [
   { label: "Bold",          Icon: Bold,          command: (e: ReturnType<typeof useEditor>) => e?.chain().focus().toggleBold().run(),       active: (e: ReturnType<typeof useEditor>) => !!e?.isActive("bold") },
@@ -123,6 +124,7 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [applied, setApplied] = useState(false);
+  const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus | null>(null);
   const [applyOpen, setApplyOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -131,9 +133,18 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
     setLoading(true);
     setError(null);
 
-    apiFetch<JobPostingOut>(`/job-postings/${id}`)
-      .then((data) => {
-        if (!cancelled) setJob(data);
+    Promise.all([
+      apiFetch<JobPostingOut>(`/job-postings/${id}`),
+      apiFetch<ApplicationOut[]>("/applications/me").catch(() => [] as ApplicationOut[]),
+    ])
+      .then(([jobData, myApplications]) => {
+        if (cancelled) return;
+        setJob(jobData);
+        const existing = myApplications.find((a) => a.job_id === Number(id));
+        if (existing) {
+          setApplied(true);
+          setApplicationStatus(existing.status);
+        }
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load job details");
@@ -160,6 +171,7 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
         } satisfies ApplicationCreate),
       });
       setApplied(true);
+      setApplicationStatus("pending");
       setApplyOpen(false);
       toast.success("Application submitted successfully!");
     } catch (err) {
@@ -232,16 +244,27 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
             </div>
 
             <div className="flex flex-col items-end gap-3 lg:justify-start">
-              <div className="flex items-center gap-3">
+              {applied ? (
+                <div className="flex flex-col items-end gap-1.5">
+                  <div className="flex items-center gap-2 rounded-xl bg-green-50 px-4 py-2.5 text-green-700 ring-1 ring-green-200">
+                    <CheckCircle2 className="size-4 shrink-0" />
+                    <span className="font-semibold text-sm">Applied</span>
+                  </div>
+                  {applicationStatus && (
+                    <span className={`text-xs font-medium ${applicationStatus === "reviewed" ? "text-blue-600" : "text-muted-foreground"}`}>
+                      Status: {applicationStatus === "reviewed" ? "Reviewed" : "Pending review"}
+                    </span>
+                  )}
+                </div>
+              ) : (
                 <Button
                   onClick={() => setApplyOpen(true)}
-                  disabled={applied}
-                  className="h-10 w-52 gap-2 bg-sky-700 px-6 py-3 text-base disabled:opacity-70"
+                  className="h-10 w-52 gap-2 bg-sky-700 px-6 py-3 text-base hover:bg-sky-800"
                 >
-                  {applied ? "Applied" : "Apply Now"}
-                  {!applied && <ArrowRight className="size-4" />}
+                  Apply Now
+                  <ArrowRight className="size-4" />
                 </Button>
-              </div>
+              )}
             </div>
           </div>
 
