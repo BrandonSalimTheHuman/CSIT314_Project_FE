@@ -99,10 +99,20 @@ const JobCard = ({ job }: { job: JobPostingOut }) => (
 
     <div className="mt-6">
       <h3 className="font-semibold text-foreground text-xl tracking-tight">{job.title}</h3>
-      <div className="mt-2 flex items-center gap-2 font-medium text-slate-500 text-sm">
-        <span>{job.work_mode ?? "N/A"}</span>
-        <span>•</span>
-        <span>{job.salary_range ?? "Not specified"}</span>
+      <div className="mt-2 flex items-center gap-2 text-sm">
+        {job.work_mode && (
+          <span className="rounded-full bg-blue-50 px-2.5 py-0.5 font-medium text-blue-700 capitalize">
+            {job.work_mode}
+          </span>
+        )}
+        {job.salary_range && (
+          <span className="font-medium text-slate-600">
+            {job.salary_range}/month
+          </span>
+        )}
+        {!job.salary_range && (
+          <span className="text-slate-400">Salary not specified</span>
+        )}
       </div>
     </div>
   </Link>
