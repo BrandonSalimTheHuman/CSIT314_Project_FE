@@ -10,7 +10,7 @@ export default function MembershipSuccessPage() {
   const router = useRouter();
 
   return (
-    <div className='min-h-screen bg-background px-4 py-12 sm:px-6 lg:px-8'>
+    <div className='flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8'>
       <div className='mx-auto flex max-w-lg flex-col items-center gap-8 text-center'>
         <div className='flex flex-col items-center gap-4'>
           <CheckCircle className='h-16 w-16 text-[#0A65CC]' />

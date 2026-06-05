@@ -22,10 +22,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { apiFetch } from "@/lib/api/client";
 import type { JobPostingOut, Page } from "@/lib/api/types";
 
-const FREE_LIMIT = 10;
+const PAGE_SIZE = 10;
 
 const sortOptions = ["Latest", "Oldest"];
-const perPageOptions = ["10 per page", "12 per page", "24 per page"];
 
 const getVisiblePages = (page: number, pageCount: number) => {
   const half = Math.floor(5 / 2);
@@ -72,28 +71,35 @@ const JobCard = ({ job }: { job: JobPostingOut }) => (
 export default function CandidateJobsPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [submittedSearch, setSubmittedSearch] = useState("");
   const [sort, setSort] = useState("Latest");
-  const [perPage, setPerPage] = useState("10 per page");
   const [page, setPage] = useState(1);
   const [paywallOpen, setPaywallOpen] = useState(false);
 
   const [jobs, setJobs] = useState<JobPostingOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalJobs, setTotalJobs] = useState(0);
-  const [backendPageCount, setBackendPageCount] = useState(1);
-
-  const pageSize = Number(perPage.split(" ")[0]);
+  const [pageCount, setPageCount] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
 
-    apiFetch<Page<JobPostingOut>>(`/job-postings?page=${page}&size=${pageSize}`)
+    const offset = (page - 1) * PAGE_SIZE;
+    const params = new URLSearchParams({
+      limit: String(PAGE_SIZE),
+      offset: String(offset),
+    });
+    if (submittedSearch.trim()) {
+      params.set("keyword", submittedSearch.trim());
+    }
+
+    apiFetch<Page<JobPostingOut>>(`/job-postings?${params.toString()}`)
       .then((data) => {
         if (cancelled) return;
         setJobs(data.items);
         setTotalJobs(data.total);
-        setBackendPageCount(data.pages);
+        setPageCount(Math.max(1, Math.ceil(data.total / data.limit)));
       })
       .catch((err) => {
         if (cancelled) return;
@@ -106,45 +112,26 @@ export default function CandidateJobsPage() {
     return () => {
       cancelled = true;
     };
-  }, [page, pageSize]);
+  }, [page, submittedSearch]);
 
-  const requiresMembership = (nextPage: number, nextPerPage: string) => {
-    const size = Number(nextPerPage.split(" ")[0]);
-    return nextPage > 1 || size > FREE_LIMIT;
+  const handleSearch = () => {
+    setPage(1);
+    setSubmittedSearch(search);
   };
 
   const handlePageChange = (nextPage: number) => {
-    if (requiresMembership(nextPage, perPage)) {
+    if (nextPage > 1) {
       setPaywallOpen(true);
       return;
     }
     setPage(nextPage);
   };
 
-  const handlePerPageChange = (nextPerPage: string) => {
-    if (requiresMembership(1, nextPerPage)) {
-      setPaywallOpen(true);
-      return;
-    }
-    setPerPage(nextPerPage);
-    setPage(1);
-  };
-
-  // Client-side filter on fetched results
-  const filteredJobs = (() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return jobs;
-    return jobs.filter((job) =>
-      [job.title, job.location, job.work_mode, job.salary_range].filter(Boolean).join(" ").toLowerCase().includes(query),
-    );
-  })();
-
-  const sortedJobs = [...filteredJobs].sort((a, b) => {
+  const sortedJobs = [...jobs].sort((a, b) => {
     if (sort === "Oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
-  const pageCount = backendPageCount;
   const visiblePages = getVisiblePages(page, pageCount);
 
   return (
@@ -162,9 +149,15 @@ export default function CandidateJobsPage() {
                   placeholder="Job title, Keyword..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
                 />
               </div>
-              <Button className="bg-[#0066cc] px-8 py-6 font-medium text-base hover:bg-[#0052a3]">Find Job</Button>
+              <Button
+                className="bg-[#0066cc] px-8 py-6 font-medium text-base hover:bg-[#0052a3]"
+                onClick={handleSearch}
+              >
+                Find Job
+              </Button>
             </div>
 
             <Button
@@ -183,25 +176,13 @@ export default function CandidateJobsPage() {
             {totalJobs} jobs found
           </div>
 
-          <div className="grid grid-cols-2 items-center gap-3">
+          <div className="flex items-center gap-3">
             <Select value={sort} onValueChange={setSort}>
               <SelectTrigger className="h-12 w-[180px] border-slate-200 bg-white py-5 text-slate-600">
                 <SelectValue placeholder="Latest" />
               </SelectTrigger>
               <SelectContent>
                 {sortOptions.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={perPage} onValueChange={handlePerPageChange}>
-              <SelectTrigger className="h-12 w-[180px] border-slate-200 bg-white py-5 text-slate-600">
-                <SelectValue placeholder="12 per page" />
-              </SelectTrigger>
-              <SelectContent>
-                {perPageOptions.map((option) => (
                   <SelectItem key={option} value={option}>
                     {option}
                   </SelectItem>

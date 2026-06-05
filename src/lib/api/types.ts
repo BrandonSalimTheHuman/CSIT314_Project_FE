@@ -173,7 +173,6 @@ export interface MembershipPortalOut {
 export interface Page<T> {
   items: T[];
   total: number;
-  page: number;
-  size: number;
-  pages: number;
+  limit: number;
+  offset: number;
 }
