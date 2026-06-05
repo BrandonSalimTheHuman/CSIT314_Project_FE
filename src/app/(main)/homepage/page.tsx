@@ -11,7 +11,6 @@ import {
   MapPin,
   Phone,
   ScanSearch,
-  Search,
   Upload,
   UserPlus,
 } from "lucide-react";
@@ -128,22 +127,13 @@ export default function HomepagePage() {
       {/* ── Navbar ─────────────────────────────────────────────────────────── */}
       <nav className="flex h-[72px] w-full items-center border-[#E4E5E8] border-b bg-white">
         <div className="mx-auto flex w-full max-w-[1320px] items-center justify-between gap-6 px-4">
-          {/* Logo + Search */}
-          <div className="flex flex-1 items-center gap-4">
+          {/* Logo */}
+          <div className="flex items-center">
             <Link href="/" className="flex shrink-0 items-center gap-2">
               <Image src={logoImage} alt="MyJob logo" width={40} height={40} />
               <span className="font-bold text-2xl text-[#0A65CC]">My</span>
               <span className="font-bold text-2xl text-[#18191C]">Job</span>
             </Link>
-
-            <div className="flex w-full max-w-xl items-center gap-2 rounded-lg border border-[#E4E5E8] bg-white px-4 py-2">
-              <Search size={18} className="text-[#9199A3]" />
-              <input
-                type="text"
-                placeholder="Job title, keyword, company"
-                className="flex-1 bg-transparent text-[#767F8C] text-sm outline-none placeholder:text-[#9199A3]"
-              />
-            </div>
           </div>
 
           {/* Auth Buttons */}
