@@ -46,6 +46,39 @@ interface CandidateProfileModalProps {
   onClose: () => void;
 }
 
+const CANDIDATE_LEVEL_LABELS: Record<string, string> = {
+  entry: "Entry Level",
+  mid: "Mid Level",
+  expert: "Expert Level",
+};
+
+const EDUCATION_LABELS: Record<string, string> = {
+  "high-school": "High School",
+  associate: "Associate Degree",
+  bachelor: "Bachelor's Degree",
+  master: "Master's Degree",
+  doctorate: "Doctorate",
+};
+
+const WORK_MODE_LABELS: Record<string, string> = {
+  remote: "Remote",
+  onsite: "On-site",
+  hybrid: "Hybrid",
+};
+
+const EXPERIENCE_LABELS: Record<string, string> = {
+  "0-1": "0–1 years",
+  "1-3": "1–3 years",
+  "3-5": "3–5 years",
+  "5-10": "5–10 years",
+  "10+": "10+ years",
+};
+
+function formatLabel(value: string, map: Record<string, string>): string {
+  if (!value) return "";
+  return map[value] ?? value.charAt(0).toUpperCase() + value.slice(1).replace(/-/g, " ");
+}
+
 function formatDateRange(start: string | null, end: string | null): string {
   const fmt = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   if (start && end) return `${fmt(start)} – ${fmt(end)}`;
@@ -78,7 +111,7 @@ export function CandidateProfileModal({ candidate, onClose }: CandidateProfileMo
                 <div>
                   <h1 className="text-2xl font-semibold text-foreground">{candidate.name}</h1>
                   {candidate.title && (
-                    <div className="mt-0.5 text-sm text-muted-foreground">{candidate.title}</div>
+                    <div className="mt-0.5 text-sm text-muted-foreground">{formatLabel(candidate.title, CANDIDATE_LEVEL_LABELS)}</div>
                   )}
                   <div className="mt-2 flex flex-wrap gap-2">
                     {candidate.location && (
@@ -88,7 +121,7 @@ export function CandidateProfileModal({ candidate, onClose }: CandidateProfileMo
                     )}
                     {candidate.experience && (
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                        <Briefcase className="size-3.5" />{candidate.experience} experience
+                        <Briefcase className="size-3.5" />{formatLabel(candidate.experience, EXPERIENCE_LABELS)} experience
                       </span>
                     )}
                   </div>
@@ -194,28 +227,28 @@ export function CandidateProfileModal({ candidate, onClose }: CandidateProfileMo
                     <div>
                       <User className="size-5 text-sky-700 mb-1" />
                       <div className="text-xs font-semibold uppercase text-slate-400">Gender</div>
-                      <div className="text-sm font-medium text-foreground">{candidate.gender}</div>
+                      <div className="text-sm font-medium text-foreground">{formatLabel(candidate.gender, {})}</div>
                     </div>
                   )}
                   {candidate.maritalStatus && (
                     <div>
                       <User className="size-5 text-sky-700 mb-1" />
                       <div className="text-xs font-semibold uppercase text-slate-400">Marital Status</div>
-                      <div className="text-sm font-medium text-foreground">{candidate.maritalStatus}</div>
+                      <div className="text-sm font-medium text-foreground">{formatLabel(candidate.maritalStatus, {})}</div>
                     </div>
                   )}
                   {candidate.experience && (
                     <div>
                       <Briefcase className="size-5 text-sky-700 mb-1" />
                       <div className="text-xs font-semibold uppercase text-slate-400">Experience</div>
-                      <div className="text-sm font-medium text-foreground">{candidate.experience}</div>
+                      <div className="text-sm font-medium text-foreground">{formatLabel(candidate.experience, EXPERIENCE_LABELS)}</div>
                     </div>
                   )}
                   {candidate.education && (
                     <div>
                       <GraduationCap className="size-5 text-sky-700 mb-1" />
                       <div className="text-xs font-semibold uppercase text-slate-400">Education</div>
-                      <div className="text-sm font-medium text-foreground">{candidate.education}</div>
+                      <div className="text-sm font-medium text-foreground">{formatLabel(candidate.education, EDUCATION_LABELS)}</div>
                     </div>
                   )}
                   {candidate.fieldOfStudy && (
@@ -229,7 +262,7 @@ export function CandidateProfileModal({ candidate, onClose }: CandidateProfileMo
                     <div className="col-span-2">
                       <Briefcase className="size-5 text-sky-700 mb-1" />
                       <div className="text-xs font-semibold uppercase text-slate-400">Preferred Work Mode</div>
-                      <div className="text-sm font-medium text-foreground">{candidate.preferredWorkingMode}</div>
+                      <div className="text-sm font-medium text-foreground">{formatLabel(candidate.preferredWorkingMode, WORK_MODE_LABELS)}</div>
                     </div>
                   )}
                 </div>

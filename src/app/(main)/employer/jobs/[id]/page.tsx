@@ -54,33 +54,47 @@ import { Textarea } from "@/components/ui/textarea";
 
 // ── Filter option lists ─────────────────────────────────────────────────────
 
-const locationOptions = [
+const levelFilterOptions = [
   { label: "All", value: "All" },
-  { label: "Entry Level", value: "Entry Level" },
-  { label: "Mid Level", value: "Mid Level" },
-  { label: "Expert Level", value: "Expert Level" },
+  { label: "Entry Level", value: "entry" },
+  { label: "Mid Level", value: "mid" },
+  { label: "Expert Level", value: "expert" },
 ];
 
 const experienceFilterOptions = [
-  "All",
-  "Freshers",
-  "1-2 years",
-  "2-4 years",
-  "4-6 years",
-  "6-8 years",
-  "8-10 years",
-  "10-15 years",
-  "15+ years",
+  { label: "All", value: "All" },
+  { label: "0–1 years", value: "0-1" },
+  { label: "1–3 years", value: "1-3" },
+  { label: "3–5 years", value: "3-5" },
+  { label: "5–10 years", value: "5-10" },
+  { label: "10+ years", value: "10+" },
 ];
 
-const educationFilterOptions = ["All", "High School", "Intermediate", "Graduation", "Master Degree", "Bachelor Degree"];
+const educationFilterOptions = [
+  { label: "All", value: "All" },
+  { label: "High School", value: "high-school" },
+  { label: "Associate Degree", value: "associate" },
+  { label: "Bachelor's Degree", value: "bachelor" },
+  { label: "Master's Degree", value: "master" },
+  { label: "Doctorate / PhD", value: "doctorate" },
+];
 
 // ── Edit-form option lists ──────────────────────────────────────────────────
 
-const EDUCATION_OPTIONS = ["All", "High School", "Intermediate", "Graduation", "Master Degree", "Bachelor Degree"];
-const EXPERIENCE_OPTIONS = ["All", "Freshers", "1-2 years", "2-4 years", "4-6 years", "6-8 years", "8-10 years", "10-15 years", "15+ years"];
-const JOB_LEVEL_OPTIONS = ["Entry Level", "Mid Level", "Expert Level"];
-const JOB_TYPE_OPTIONS = ["Full time", "Part time", "Internship", "Remote", "Temporary", "Contract based"];
+const EDUCATION_OPTIONS = [
+  { value: "high-school", label: "High School" },
+  { value: "associate", label: "Associate Degree" },
+  { value: "bachelor", label: "Bachelor's Degree" },
+  { value: "master", label: "Master's Degree" },
+  { value: "doctorate", label: "Doctorate / PhD" },
+];
+
+const WORK_MODE_OPTIONS = [
+  { value: "remote", label: "Remote" },
+  { value: "onsite", label: "On-site" },
+  { value: "hybrid", label: "Hybrid" },
+];
+
 const SALARY_OPTIONS = ["$50 - $1000", "$1000 - $2500", "$2500 - $4000", "$4000 - $6000", "$6000 - $8000", "$8000 - $10000", "$10000 - $15000", "$15000+"];
 
 const EDITOR_MENU = [
@@ -95,6 +109,33 @@ const EDITOR_MENU = [
 function workModeLabel(wm: string | null | undefined): string {
   const map: Record<string, string> = { remote: "Remote", onsite: "On-site", hybrid: "Hybrid" };
   return wm ? (map[wm] ?? wm) : "N/A";
+}
+
+const CANDIDATE_LEVEL_LABELS: Record<string, string> = {
+  entry: "Entry Level",
+  mid: "Mid Level",
+  expert: "Expert Level",
+};
+
+const EXPERIENCE_LABELS: Record<string, string> = {
+  "0-1": "0–1 years",
+  "1-3": "1–3 years",
+  "3-5": "3–5 years",
+  "5-10": "5–10 years",
+  "10+": "10+ years",
+};
+
+const EDUCATION_LABELS: Record<string, string> = {
+  "high-school": "High School",
+  associate: "Associate Degree",
+  bachelor: "Bachelor's Degree",
+  master: "Master's Degree",
+  doctorate: "Doctorate / PhD",
+};
+
+function formatLabel(value: string | null | undefined, map: Record<string, string>): string {
+  if (!value) return "N/A";
+  return map[value] ?? value.charAt(0).toUpperCase() + value.slice(1).replace(/-/g, " ");
 }
 
 /** Convert a CandidateOut to the CandidateProfile shape the modal expects */
@@ -140,7 +181,7 @@ function CandidateCard({ candidate, onViewProfile }: { candidate: CandidateOut; 
 
         <div className="min-w-0">
           <div className="font-semibold text-base">{candidate.full_name}</div>
-          <div className="text-muted-foreground text-sm">{candidate.candidate_level ?? "Candidate"}</div>
+          <div className="text-muted-foreground text-sm">{formatLabel(candidate.candidate_level, CANDIDATE_LEVEL_LABELS)}</div>
 
           <div className="mt-3 flex flex-wrap gap-3 text-muted-foreground text-sm">
             <div className="inline-flex items-center gap-1.5">
@@ -149,7 +190,7 @@ function CandidateCard({ candidate, onViewProfile }: { candidate: CandidateOut; 
             </div>
             <div className="inline-flex items-center gap-1.5">
               <BriefcaseBusiness className="size-4" />
-              <span>{candidate.years_of_experience ?? "N/A"} experience</span>
+              <span>{formatLabel(candidate.years_of_experience, EXPERIENCE_LABELS)} experience</span>
             </div>
           </div>
 
@@ -196,13 +237,8 @@ function EditJobForm({
 }) {
   const [jobTitle, setJobTitle] = useState(job.title);
   const [jobLocation, setJobLocation] = useState(job.location ?? "");
-  const [editEducation, setEditEducation] = useState(job.required_education ?? "All");
-  const [experience, setExperience] = useState(
-    job.required_experience != null ? `${job.required_experience}` : "All",
-  );
-  const [jobType, setJobType] = useState(workModeLabel(job.work_mode));
-  const [expiryDate, setExpiryDate] = useState("");
-  const [jobLevel, setJobLevel] = useState("Mid Level");
+  const [editEducation, setEditEducation] = useState(job.required_education ?? "");
+  const [workMode, setWorkMode] = useState(job.work_mode ?? "onsite");
   const [salary, setSalary] = useState(job.salary_range ?? "$50 - $1000");
   const [saving, setSaving] = useState(false);
 
@@ -217,23 +253,12 @@ function EditJobForm({
   const handleSave = async () => {
     setSaving(true);
     try {
-      const workModeMap: Record<string, string> = {
-        "Remote": "remote",
-        "On-site": "onsite",
-        "Hybrid": "hybrid",
-        "Full time": "onsite",
-        "Part time": "onsite",
-        "Internship": "onsite",
-        "Temporary": "onsite",
-        "Contract based": "onsite",
-      };
       const update: JobPostingUpdate = {
         title: jobTitle,
         location: jobLocation || undefined,
         company_info: editor?.getText() ?? undefined,
-        required_education: editEducation === "All" ? undefined : editEducation,
-        required_experience: experience !== "All" ? Number.parseInt(experience, 10) || undefined : undefined,
-        work_mode: (workModeMap[jobType] ?? jobType) as JobPostingUpdate["work_mode"],
+        required_education: editEducation || undefined,
+        work_mode: workMode as JobPostingUpdate["work_mode"],
         salary_range: salary,
       };
       await onSave(update);
@@ -284,46 +309,16 @@ function EditJobForm({
             <Select value={editEducation} onValueChange={setEditEducation}>
               <SelectTrigger className="w-full py-5"><SelectValue placeholder="Select..." /></SelectTrigger>
               <SelectContent>
-                {EDUCATION_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                {EDUCATION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label>Year of Experience</Label>
-            <Select value={experience} onValueChange={setExperience}>
+            <Label>Work Mode</Label>
+            <Select value={workMode} onValueChange={setWorkMode}>
               <SelectTrigger className="w-full py-5"><SelectValue placeholder="Select..." /></SelectTrigger>
               <SelectContent>
-                {EXPERIENCE_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label>Job Type</Label>
-            <Select value={jobType} onValueChange={setJobType}>
-              <SelectTrigger className="w-full py-5"><SelectValue placeholder="Select..." /></SelectTrigger>
-              <SelectContent>
-                {JOB_TYPE_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          <div className="grid gap-2">
-            <Label>Expiration Date</Label>
-            <Input
-              type="date"
-              value={expiryDate}
-              onChange={(e) => setExpiryDate(e.target.value)}
-              className="py-5"
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label>Job Level</Label>
-            <Select value={jobLevel} onValueChange={setJobLevel}>
-              <SelectTrigger className="w-full py-5"><SelectValue placeholder="Select..." /></SelectTrigger>
-              <SelectContent>
-                {JOB_LEVEL_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                {WORK_MODE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -585,11 +580,7 @@ export default function EmployerJobDetailPage({ params }: { params: Promise<{ id
 
   const filteredCandidates = candidates.filter((candidate) => {
     if (filterLevel !== "All" && candidate.candidate_level !== filterLevel) return false;
-    if (filterExperience !== "All") {
-      // Simple prefix match on years_of_experience
-      const yoe = candidate.years_of_experience ?? "";
-      if (!yoe.startsWith(filterExperience.split(" ")[0])) return false;
-    }
+    if (filterExperience !== "All" && candidate.years_of_experience !== filterExperience) return false;
     if (!education.includes("All") && education.length > 0) {
       if (!education.includes(candidate.education_level ?? "")) return false;
     }
@@ -724,7 +715,7 @@ export default function EmployerJobDetailPage({ params }: { params: Promise<{ id
                       <div className="flex flex-col gap-1 py-4">
                         <GraduationCap color="#0A65CC" className="size-6" />
                         <div className="font-semibold text-muted-foreground text-xs uppercase">Education:</div>
-                        <div className="font-medium text-sm">{job.required_education ?? "N/A"}</div>
+                        <div className="font-medium text-sm">{formatLabel(job.required_education, EDUCATION_LABELS)}</div>
                       </div>
                       <div className="flex flex-col gap-1 py-4">
                         <DollarSign color="#0A65CC" className="size-6" />
@@ -822,7 +813,7 @@ export default function EmployerJobDetailPage({ params }: { params: Promise<{ id
                   <div className="space-y-3 rounded-3xl border border-border bg-background p-4">
                     <div className="mb-2 font-semibold text-foreground text-sm">Candidate Level</div>
                     <div className="grid gap-3">
-                      {locationOptions.map((option) => (
+                      {levelFilterOptions.map((option) => (
                         <label
                           key={option.value}
                           className="inline-flex cursor-pointer items-center gap-3 rounded-2xl px-3 text-sm transition hover:border-primary/70"
@@ -846,18 +837,18 @@ export default function EmployerJobDetailPage({ params }: { params: Promise<{ id
                     <div className="grid gap-2">
                       {experienceFilterOptions.map((option) => (
                         <label
-                          key={option}
+                          key={option.value}
                           className="inline-flex cursor-pointer items-center gap-3 rounded-2xl px-3 text-sm transition hover:border-primary/70"
                         >
                           <input
                             type="radio"
                             name="candidate-experience"
-                            value={option}
-                            checked={filterExperience === option}
-                            onChange={() => { setFilterExperience(option); setPage(1); }}
+                            value={option.value}
+                            checked={filterExperience === option.value}
+                            onChange={() => { setFilterExperience(option.value); setPage(1); }}
                             className="h-4 w-4 accent-primary"
                           />
-                          <span>{option}</span>
+                          <span>{option.label}</span>
                         </label>
                       ))}
                     </div>
@@ -868,13 +859,13 @@ export default function EmployerJobDetailPage({ params }: { params: Promise<{ id
                     <div className="grid gap-2">
                       {educationFilterOptions.map((option) => (
                         <label
-                          key={option}
+                          key={option.value}
                           className="inline-flex cursor-pointer items-center gap-3 rounded-2xl px-3 text-sm transition hover:border-primary/70"
                         >
                           <input
                             type="checkbox"
-                            value={option}
-                            checked={education.includes(option)}
+                            value={option.value}
+                            checked={education.includes(option.value)}
                             onChange={(event) => {
                               const value = event.target.value;
                               if (value === "All") {
@@ -891,7 +882,7 @@ export default function EmployerJobDetailPage({ params }: { params: Promise<{ id
                             }}
                             className="h-4 w-4 accent-primary"
                           />
-                          <span>{option}</span>
+                          <span>{option.label}</span>
                         </label>
                       ))}
                     </div>
