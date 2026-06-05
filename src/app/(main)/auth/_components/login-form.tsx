@@ -11,13 +11,21 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldContent, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldContent,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase/client";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  password: z
+    .string()
+    .min(6, { message: "Password must be at least 6 characters." }),
   remember: z.boolean().optional(),
 });
 
@@ -47,7 +55,8 @@ export function LoginForm() {
         return;
       }
 
-      const role = (authData.user?.user_metadata as Record<string, unknown>)?.role;
+      const role = (authData.user?.user_metadata as Record<string, unknown>)
+        ?.role;
 
       if (role === "candidate") {
         router.replace("/candidate/jobs");
@@ -65,7 +74,11 @@ export function LoginForm() {
   };
 
   return (
-    <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+    <form
+      noValidate
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="flex flex-col gap-4"
+    >
       <FieldGroup className="gap-4">
         <Controller
           control={form.control}
@@ -115,12 +128,15 @@ export function LoginForm() {
                 onCheckedChange={(checked) => field.onChange(Boolean(checked))}
                 aria-invalid={fieldState.invalid}
               />
-              <FieldContent>
+
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              
+              {/* <FieldContent>
                 <FieldLabel htmlFor="login-remember" className="font-normal">
                   Remember me for 30 days
                 </FieldLabel>
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </FieldContent>
+              
+              </FieldContent> */}
             </Field>
           )}
         />
