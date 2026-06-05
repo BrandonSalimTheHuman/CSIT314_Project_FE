@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Briefcase,
   Cake,
+  Crown,
   FileText,
   Globe,
   GraduationCap,
@@ -35,7 +36,7 @@ import { Separator } from "@/components/ui/separator";
 import { TagInput } from "@/components/ui/tag-input";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, apiFetch } from "@/lib/api/client";
-import type { CandidateOut, ResumeOut, WorkExperienceOut } from "@/lib/api/types";
+import type { CandidateOut, MembershipOut, ResumeOut, WorkExperienceOut } from "@/lib/api/types";
 
 // ── schema ────────────────────────────────────────────────────────────────────
 
@@ -206,6 +207,7 @@ export default function CandidateSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [profile, setProfile] = useState<ProfileState | null>(null);
+  const [membership, setMembership] = useState<MembershipOut | null>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -242,12 +244,14 @@ export default function CandidateSettingsPage() {
 
   async function fetchProfile() {
     try {
-      const [candidate, resumes] = await Promise.all([
+      const [candidate, resumes, membershipData] = await Promise.all([
         apiFetch<CandidateOut>("/candidates/me"),
         apiFetch<ResumeOut[]>("/candidates/me/resumes"),
+        apiFetch<MembershipOut>("/memberships/me"),
       ]);
       const p = candidateToProfile(candidate, resumes);
       setProfile(p);
+      setMembership(membershipData);
       form.reset(profileToFormDefaults(p));
     } catch (err) {
       const message = err instanceof ApiError ? err.message : "Failed to load profile.";
@@ -416,9 +420,16 @@ export default function CandidateSettingsPage() {
             <div className="mt-3">
               <div className="flex items-center gap-2">
                 <h1 className="font-bold text-2xl">{profile.fullName}</h1>
-                <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-[#0A65CC] ring-1 ring-blue-200">
-                  Free
-                </span>
+                {membership?.is_active ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-600 ring-1 ring-amber-200">
+                    <Crown className="size-3" />
+                    Premium
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-[#0A65CC] ring-1 ring-blue-200">
+                    Free
+                  </span>
+                )}
               </div>
               <p className="text-muted-foreground">
                 {LEVEL_LABELS[profile.candidateLevel] ?? profile.candidateLevel} · {EXPERIENCE_LABELS[profile.yearsOfExperience] ?? profile.yearsOfExperience} experience
