@@ -1,7 +1,10 @@
+"use client";
+
 import { Fragment } from "react";
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import {
   ArrowRight,
@@ -17,6 +20,7 @@ import {
 
 import heroImage from "../../../../media/homepageimage.svg";
 import logoImage from "../../../../media/logo.svg";
+import { useAuth } from "@/lib/auth/auth-context";
 import { HeroSearch } from "./_components/hero-search";
 import { TestimonialsCarousel } from "./_components/testimonials-carousel";
 
@@ -122,6 +126,17 @@ const footerLinks = {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function HomepagePage() {
+  const { role } = useAuth();
+  const router = useRouter();
+
+  const candidateRoute = role === "candidate"
+    ? "/candidate/jobs"
+    : role === "employer"
+    ? "/employer/jobs"
+    : "/auth/login";
+
+  const registerRoute = "/auth/onboarding";
+
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: "var(--font-inter)" }}>
       {/* ── Navbar ─────────────────────────────────────────────────────────── */}
@@ -145,7 +160,7 @@ export default function HomepagePage() {
               Sign In
             </Link>
             <Link
-              href="/auth/onboarding"
+              href={registerRoute}
               className="rounded-lg bg-[#0A65CC] px-5 py-2 font-medium text-sm text-white transition-colors hover:bg-[#0855b0]"
             >
               Sign Up
@@ -187,9 +202,8 @@ export default function HomepagePage() {
           <h2 className="mb-16 text-center font-bold text-3xl text-[#18191C]">How My Job work</h2>
 
           <div className="flex items-start justify-between">
-            {steps.map(({ Icon, title, desc }, _i) => (
+            {steps.map(({ Icon, title, desc }) => (
               <Fragment key={title}>
-                {/* Step card */}
                 <div className="flex w-[22%] flex-col items-center rounded-2xl px-4 py-6 text-center">
                   <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-[#E4E5E8] bg-white shadow-sm">
                     <Icon size={26} className="text-[#0A65CC]" />
@@ -197,24 +211,6 @@ export default function HomepagePage() {
                   <h3 className="mb-2 font-semibold text-[#18191C] text-base">{title}</h3>
                   <p className="text-[#767F8C] text-sm leading-6">{desc}</p>
                 </div>
-
-                {/* Dashed curved arrow */}
-                {/* {i < steps.length - 1 && (
-                  <div className="flex-1 flex justify-center" style={{ paddingTop: "32px" }}>
-                    <svg viewBox="0 0 120 60" fill="none" className="w-full max-w-[160px]" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <marker id={`arrowhead-${i}`} markerWidth="6" markerHeight="6" refX="5" refY="2" orient="auto">
-                          <path d="M0,0 L0,4 L6,2 z" fill="#0A65CC" opacity="0.5" />
-                        </marker>
-                      </defs>
-                      {i % 2 === 0 ? (
-                        <path d="M 5,50 Q 60,5 115,50" stroke="#0A65CC" strokeWidth="1.5" strokeDasharray="5,4" strokeOpacity="0.45" markerEnd={`url(#arrowhead-${i})`} />
-                      ) : (
-                        <path d="M 5,10 Q 60,55 115,10" stroke="#0A65CC" strokeWidth="1.5" strokeDasharray="5,4" strokeOpacity="0.45" markerEnd={`url(#arrowhead-${i})`} />
-                      )}
-                    </svg>
-                  </div>
-                )} */}
               </Fragment>
             ))}
           </div>
@@ -227,9 +223,13 @@ export default function HomepagePage() {
           {/* Heading row */}
           <div className="mb-10 flex items-center justify-between">
             <h2 className="font-bold text-3xl text-[#18191C]">Featured job</h2>
-            <Link href="#" className="flex items-center gap-2 font-medium text-[#0A65CC] text-sm hover:underline">
+            <button
+              type="button"
+              onClick={() => router.push(candidateRoute)}
+              className="flex items-center gap-2 font-medium text-[#0A65CC] text-sm hover:underline"
+            >
               View All <ArrowRight size={16} />
-            </Link>
+            </button>
           </div>
 
           {/* Job list */}
@@ -241,12 +241,10 @@ export default function HomepagePage() {
               >
                 {/* Left: logo + info */}
                 <div className="flex items-center gap-5">
-                  {/* Company logo */}
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-[#E4E5E8] bg-[#F1F2F4]">
                     <span className="font-bold text-[#0A65CC] text-sm">{job.initials}</span>
                   </div>
 
-                  {/* Details */}
                   <div>
                     <div className="mb-1 flex items-center gap-2">
                       <span className="font-semibold text-[#18191C] text-base">{job.title}</span>
@@ -272,6 +270,7 @@ export default function HomepagePage() {
                 {/* Apply button */}
                 <button
                   type="button"
+                  onClick={() => router.push(candidateRoute)}
                   className="flex shrink-0 items-center gap-2 rounded-lg border border-[#0A65CC] px-5 py-2 font-semibold text-[#0A65CC] text-sm transition-colors hover:bg-[#0A65CC] hover:text-white"
                 >
                   Apply Job <ArrowRight size={16} />
@@ -297,6 +296,7 @@ export default function HomepagePage() {
             </div>
             <button
               type="button"
+              onClick={() => router.push(registerRoute)}
               className="mt-8 flex items-center gap-2 self-start rounded-lg border border-[#E4E5E8] bg-white px-6 py-3 font-semibold text-[#18191C] text-sm transition-colors hover:border-[#0A65CC] hover:bg-[#0A65CC] hover:text-white"
             >
               Register now <ArrowRight size={16} />
@@ -314,6 +314,7 @@ export default function HomepagePage() {
             </div>
             <button
               type="button"
+              onClick={() => router.push(registerRoute)}
               className="mt-8 flex items-center gap-2 self-start rounded-lg bg-white px-6 py-3 font-semibold text-[#0A65CC] text-sm transition-colors hover:bg-blue-50"
             >
               Register now <ArrowRight size={16} />
