@@ -14,6 +14,7 @@ import {
   CalendarDays,
   Check,
   Clock3,
+  Crown,
   DollarSign,
   FileText,
   GraduationCap,
@@ -40,6 +41,14 @@ import type {
 } from "@/lib/api/types";
 import { type CandidateProfile, CandidateProfileModal } from "@/components/candidate-profile-modal";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -499,6 +508,7 @@ export default function EmployerJobDetailPage({ params }: { params: Promise<{ id
   const [filterExperience, setFilterExperience] = useState("All");
   const [education, setEducation] = useState<string[]>(["All"]);
   const [page, setPage] = useState(1);
+  const [paywallOpen, setPaywallOpen] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
 
   // ── Fetch job detail ────────────────────────────────────────────────────
@@ -598,6 +608,14 @@ export default function EmployerJobDetailPage({ params }: { params: Promise<{ id
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Failed to update application.");
     }
+  };
+
+  const handlePageChange = (nextPage: number) => {
+    if (!isMember && nextPage > 1) {
+      setPaywallOpen(true);
+      return;
+    }
+    setPage(nextPage);
   };
 
   // ── Client-side filtering on recommended candidates ────────────────────
@@ -942,7 +960,7 @@ export default function EmployerJobDetailPage({ params }: { params: Promise<{ id
                   variant="ghost"
                   className="size-10 rounded-full text-blue-400 hover:bg-blue-50 hover:text-blue-600"
                   disabled={page <= 1}
-                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                  onClick={() => handlePageChange(Math.max(1, page - 1))}
                 >
                   <ArrowLeft className="size-6" />{" "}
                 </Button>
@@ -954,7 +972,7 @@ export default function EmployerJobDetailPage({ params }: { params: Promise<{ id
                       <button
                         key={pageNum}
                         type="button"
-                        onClick={() => setPage(pageNum)}
+                        onClick={() => handlePageChange(pageNum)}
                         className={`flex size-10 items-center justify-center rounded-full font-medium text-sm transition-colors ${
                           isCurrent
                             ? "bg-[#0061C2] text-white"
@@ -972,7 +990,7 @@ export default function EmployerJobDetailPage({ params }: { params: Promise<{ id
                   variant="ghost"
                   className="size-10 rounded-full text-blue-400 hover:bg-blue-50 hover:text-blue-600"
                   disabled={page >= pageCount}
-                  onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
+                  onClick={() => handlePageChange(Math.min(pageCount, page + 1))}
                 >
                   <ArrowRight className="size-6" />
                 </Button>
@@ -987,6 +1005,37 @@ export default function EmployerJobDetailPage({ params }: { params: Promise<{ id
       {selectedCandidate && (
         <CandidateProfileModal candidate={selectedCandidate} onClose={() => setSelectedCandidate(null)} />
       )}
+
+      {/* ── Paywall dialog ─────────────────────────────────────────────────── */}
+      <Dialog open={paywallOpen} onOpenChange={setPaywallOpen}>
+        <DialogContent className="max-w-sm rounded-[2rem] text-center">
+          <DialogHeader className="items-center">
+            <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50">
+              <Crown className="size-7 text-[#0A65CC]" />
+            </div>
+            <DialogTitle className="text-xl text-slate-950">Membership Required</DialogTitle>
+            <DialogDescription asChild>
+              <div className="mt-2 rounded-3xl bg-blue-50 p-4 text-sm leading-6 text-slate-700">
+                Free accounts can view only the top{" "}
+                <span className="font-semibold text-[#0A65CC]">10 recommended candidates</span>.
+                Upgrade to unlock full candidate access, advanced filters, and priority hiring tools.
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-2 flex-col gap-2 sm:flex-col">
+            <Button
+              className="w-full rounded-full bg-[#0A65CC] font-semibold text-white hover:bg-[#0855b0]"
+              onClick={() => { setPaywallOpen(false); router.push("/membership"); }}
+            >
+              <Crown className="mr-2 size-4" />
+              Choose Membership
+            </Button>
+            <Button variant="ghost" className="w-full rounded-full text-slate-600 hover:text-slate-900" onClick={() => setPaywallOpen(false)}>
+              Maybe Later
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

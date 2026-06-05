@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Building2, Globe, Loader2, Mail, Pencil, Phone, X } from "lucide-react";
+import { Building2, Crown, Globe, Loader2, Mail, Pencil, Phone, X } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, apiFetch } from "@/lib/api/client";
-import type { EmployerOut } from "@/lib/api/types";
+import type { EmployerOut, MembershipOut } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth/auth-context";
 
 // ── schema ────────────────────────────────────────────────────────────────────
@@ -76,6 +76,7 @@ export default function EmployerSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [profile, setProfile] = useState<ProfileState | null>(null);
+  const [isMember, setIsMember] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -94,9 +95,13 @@ export default function EmployerSettingsPage() {
 
   async function fetchProfile() {
     try {
-      const employer = await apiFetch<EmployerOut>("/employers/me");
+      const [employer, membership] = await Promise.all([
+        apiFetch<EmployerOut>("/employers/me"),
+        apiFetch<MembershipOut>("/memberships/me").catch(() => null),
+      ]);
       const p = employerToProfile(employer);
       setProfile(p);
+      setIsMember(membership?.is_active ?? false);
       form.reset(profileToFormDefaults(p));
     } catch (err) {
       const message = err instanceof ApiError ? err.message : "Failed to load profile.";
@@ -215,7 +220,19 @@ export default function EmployerSettingsPage() {
 
             {/* Name — below banner in normal flow */}
             <div className="mt-3">
-              <h1 className="font-bold text-2xl">{profile.fullName}</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="font-bold text-2xl">{profile.fullName}</h1>
+                {isMember ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 font-semibold text-amber-700 text-xs">
+                    <Crown className="size-3.5" />
+                    Premium
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 font-semibold text-blue-600 text-xs">
+                    Free
+                  </span>
+                )}
+              </div>
               <p className="text-muted-foreground">{profile.companyName}</p>
             </div>
 
