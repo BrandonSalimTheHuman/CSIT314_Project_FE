@@ -65,6 +65,8 @@ const candidateSchema = z.object({
   nationality: z.string().optional(),
   maritalStatus: z.string().optional(),
   website: z.string().optional(),
+  preferredLocation: z.string().optional(),
+  preferredWorkingMode: z.string().optional(),
   yearsOfExperience: z.string().min(1, 'Please select your experience range.'),
   candidateLevel: z.string().min(1, 'Please select your level.'),
   biography: z.string().optional(),
@@ -125,6 +127,8 @@ export function RegisterFormCandidate() {
       nationality: '',
       maritalStatus: '',
       website: '',
+      preferredLocation: '',
+      preferredWorkingMode: '',
       yearsOfExperience: '',
       candidateLevel: '',
       biography: '',
@@ -307,6 +311,8 @@ export function RegisterFormCandidate() {
           nationality: data.nationality || null,
           marital_status: data.maritalStatus || null,
           website: data.website || null,
+          preferred_location: data.preferredLocation || null,
+          preferred_working_mode: data.preferredWorkingMode || null,
           biography: data.biography || null,
           years_of_experience: data.yearsOfExperience || null,
           candidate_level: data.candidateLevel || null,
@@ -569,6 +575,43 @@ export function RegisterFormCandidate() {
                     <span className='font-normal text-muted-foreground'>(optional)</span>
                   </FieldLabel>
                   <Input {...field} id='register-website' placeholder='https://example.com' className='py-6' aria-invalid={fieldState.invalid} />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <Controller
+              control={form.control}
+              name='preferredLocation'
+              render={({ field, fieldState }) => (
+                <Field className='gap-1.5' data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor='register-preferred-location'>
+                    Preferred Location{' '}
+                    <span className='font-normal text-muted-foreground'>(optional)</span>
+                  </FieldLabel>
+                  <Input {...field} id='register-preferred-location' placeholder='e.g. Singapore, Remote' className='py-6' aria-invalid={fieldState.invalid} />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <Controller
+              control={form.control}
+              name='preferredWorkingMode'
+              render={({ field, fieldState }) => (
+                <Field className='gap-1.5' data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor='register-preferred-work-mode'>
+                    Preferred Work Mode{' '}
+                    <span className='font-normal text-muted-foreground'>(optional)</span>
+                  </FieldLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger id='register-preferred-work-mode' className='py-6'>
+                      <SelectValue placeholder='Select work mode' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='remote'>Remote</SelectItem>
+                      <SelectItem value='onsite'>On-site</SelectItem>
+                      <SelectItem value='hybrid'>Hybrid</SelectItem>
+                    </SelectContent>
+                  </Select>
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}

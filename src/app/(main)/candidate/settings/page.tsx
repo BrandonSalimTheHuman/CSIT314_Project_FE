@@ -55,6 +55,8 @@ const schema = z.object({
   nationality: z.string().optional(),
   maritalStatus: z.string().optional(),
   website: z.string().optional(),
+  preferredLocation: z.string().optional(),
+  preferredWorkingMode: z.string().optional(),
   yearsOfExperience: z.string().min(1, "Please select your experience range."),
   candidateLevel: z.string().min(1, "Please select your level."),
   biography: z.string().optional(),
@@ -80,6 +82,7 @@ interface ProfileState {
   maritalStatus: string;
   website: string;
   preferredLocation: string;
+  preferredWorkingMode: string;
   yearsOfExperience: string;
   candidateLevel: string;
   biography: string;
@@ -102,6 +105,7 @@ function candidateToProfile(c: CandidateOut, resumes: ResumeOut[]): ProfileState
     maritalStatus: c.marital_status ?? "",
     website: c.website ?? "",
     preferredLocation: c.preferred_location ?? "",
+    preferredWorkingMode: c.preferred_working_mode ?? "",
     yearsOfExperience: c.years_of_experience ?? "",
     candidateLevel: c.candidate_level ?? "",
     biography: c.biography ?? "",
@@ -130,6 +134,8 @@ function profileToFormDefaults(p: ProfileState): FormData {
     nationality: p.nationality,
     maritalStatus: p.maritalStatus,
     website: p.website,
+    preferredLocation: p.preferredLocation,
+    preferredWorkingMode: p.preferredWorkingMode,
     yearsOfExperience: p.yearsOfExperience,
     candidateLevel: p.candidateLevel,
     biography: p.biography,
@@ -178,6 +184,12 @@ const MARITAL_LABELS: Record<string, string> = {
   widowed: "Widowed",
 };
 
+const WORK_MODE_LABELS: Record<string, string> = {
+  remote: "Remote",
+  onsite: "On-site",
+  hybrid: "Hybrid",
+};
+
 function formatDate(iso: string) {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("en-US", {
@@ -206,6 +218,7 @@ export default function CandidateSettingsPage() {
       maritalStatus: "",
       website: "",
       preferredLocation: "",
+      preferredWorkingMode: "",
       yearsOfExperience: "",
       candidateLevel: "",
       biography: "",
@@ -264,6 +277,8 @@ export default function CandidateSettingsPage() {
           nationality: data.nationality || null,
           marital_status: data.maritalStatus || null,
           website: data.website || null,
+          preferred_location: data.preferredLocation || null,
+          preferred_working_mode: data.preferredWorkingMode || null,
           years_of_experience: data.yearsOfExperience,
           candidate_level: data.candidateLevel,
           biography: data.biography || null,
@@ -561,6 +576,16 @@ export default function CandidateSettingsPage() {
                     label: "Marital Status",
                     value: MARITAL_LABELS[profile.maritalStatus] ?? profile.maritalStatus ?? "—",
                   },
+                  {
+                    icon: <MapPin className="size-5 text-blue-500" />,
+                    label: "Preferred Location",
+                    value: profile.preferredLocation || "—",
+                  },
+                  {
+                    icon: <Briefcase className="size-5 text-blue-500" />,
+                    label: "Preferred Work Mode",
+                    value: WORK_MODE_LABELS[profile.preferredWorkingMode] ?? profile.preferredWorkingMode ?? "—",
+                  },
                 ].map(({ icon, label, value }) => (
                   <div key={label} className="flex items-start gap-3">
                     <div className="mt-0.5 shrink-0">{icon}</div>
@@ -741,6 +766,47 @@ export default function CandidateSettingsPage() {
                     className="py-6"
                     aria-invalid={fieldState.invalid}
                   />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <Controller
+              control={form.control}
+              name="preferredLocation"
+              render={({ field, fieldState }) => (
+                <Field className="gap-1.5" data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="edit-preferred-location">
+                    Preferred Location <span className="font-normal text-muted-foreground">(optional)</span>
+                  </FieldLabel>
+                  <Input
+                    {...field}
+                    id="edit-preferred-location"
+                    placeholder="e.g. Singapore, Remote"
+                    className="py-6"
+                    aria-invalid={fieldState.invalid}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <Controller
+              control={form.control}
+              name="preferredWorkingMode"
+              render={({ field, fieldState }) => (
+                <Field className="gap-1.5" data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="edit-preferred-work-mode">
+                    Preferred Work Mode <span className="font-normal text-muted-foreground">(optional)</span>
+                  </FieldLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger id="edit-preferred-work-mode" className="py-6">
+                      <SelectValue placeholder="Select work mode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="remote">Remote</SelectItem>
+                      <SelectItem value="onsite">On-site</SelectItem>
+                      <SelectItem value="hybrid">Hybrid</SelectItem>
+                    </SelectContent>
+                  </Select>
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
